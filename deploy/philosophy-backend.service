@@ -13,7 +13,7 @@ Environment=NODE_ENV=production
 Environment=HOSTNAME=127.0.0.1
 Environment=PORT=3000
 Environment=MIRROR_DATA_FILE=/var/lib/philosophy/mirror-sessions.json
-ExecStart=/usr/bin/node server.js
+ExecStart=/usr/local/bin/node server.js
 Restart=always
 RestartSec=5
 NoNewPrivileges=true
