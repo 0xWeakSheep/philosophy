@@ -7,3 +7,6 @@ coverage/
 .env.local
 *.tsbuildinfo
 npm-debug.log*
+
+# Independent backend repository lives here locally but is versioned separately.
+philosophy_backend/

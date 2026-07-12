@@ -8,8 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check .",
-    "format": "biome format --write .",
+    "lint": "biome check src next.config.ts postcss.config.mjs vitest.config.ts biome.json package.json tsconfig.json",
+    "format": "biome format --write src next.config.ts postcss.config.mjs vitest.config.ts biome.json package.json tsconfig.json",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
@@ -19,8 +19,7 @@
     "motion": "12.42.2",
     "next": "16.2.10",
     "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "zod": "4.4.3"
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.8",

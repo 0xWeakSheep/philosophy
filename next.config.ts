@@ -2,19 +2,32 @@ import type { NextConfig } from "next";
 
 function backendOrigin(): string | null {
   const configured = process.env.BACKEND_API_URL?.trim();
-  if (!configured) return null;
+  if (!configured) {
+    if (process.env.VERCEL === "1") {
+      throw new Error("BACKEND_API_URL is required for Vercel deployments");
+    }
+    return null;
+  }
 
   const url = new URL(configured);
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error("BACKEND_API_URL must use http or https");
   }
-  return url.toString().replace(/\/$/u, "");
+  if (
+    url.username !== "" ||
+    url.password !== "" ||
+    url.pathname !== "/" ||
+    url.search !== "" ||
+    url.hash !== ""
+  ) {
+    throw new Error("BACKEND_API_URL must be an origin without credentials, path, query or hash");
+  }
+  return url.origin;
 }
 
 const remoteBackend = backendOrigin();
 
 const nextConfig: NextConfig = {
-  output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
   async rewrites() {

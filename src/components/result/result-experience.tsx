@@ -7,7 +7,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { MirrorChamber } from "@/components/session/mirror-chamber";
 import type { DimensionKey, MirrorSession } from "@/components/session/types";
 import { unwrapSession } from "@/components/session/types";
-import { createWorldviewProfile } from "@/lib/domain/worldview-profile";
+import { createWorldviewProfile } from "@/lib/worldview-profile";
 import { CounterfactualLab } from "./counterfactual-lab";
 import { FeedbackPanel } from "./feedback-panel";
 import { HypothesisReview } from "./hypothesis-review";

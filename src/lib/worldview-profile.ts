@@ -1,4 +1,4 @@
-import type { Dimension } from "./schemas";
+import type { DimensionKey as Dimension } from "@/components/session/types";
 
 export type WorldviewSignal = "order" | "conflict" | "center" | "open";
 export type WorldviewDigit = 1 | 2 | 3 | 4;

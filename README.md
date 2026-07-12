@@ -21,16 +21,31 @@
 - 在高风险表达出现时停止普通分析，转向即时安全提示
 - 无 API Key 时完整运行本地确定性引擎；配置 DeepSeek 后会提炼开场议题，并在不改变问题结构的前提下动态生成候选回答
 
+## 仓库边界
+
+这个仓库现在只包含 Next.js 前端。独立后端位于 [philosophy_backend](https://github.com/0xWeakSheep/philosophy_backend)，负责 API、会话存储、本地推理规则与可选的模型调用。
+
+本地工作区可以把后端仓库放在本仓库的 `philosophy_backend/` 目录中；该目录已经被前端 `.gitignore` 忽略，两个仓库可以分别提交、拉取和发布。
+
 ## 本地运行
 
 需要 Node.js 20.9 或更高版本。
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。
+同时在独立后端仓库启动 API：
+
+```bash
+cd philosophy_backend
+npm install
+npm run dev
+```
+
+前端默认打开 [http://localhost:3000](http://localhost:3000)，并把 `/api/*` 重写到 `http://127.0.0.1:4000`。
 
 生产验证：
 
@@ -40,54 +55,37 @@ npm run build
 npm start
 ```
 
-## Vercel 前端 + 自托管后端
+## Vercel 部署
 
-项目仍保持同一套 Next.js 代码，但可以把浏览器页面部署到 Vercel，并把 `/api/*` 交给独立服务器。Vercel 项目需要配置：
+在 Vercel 中导入当前前端仓库，Framework Preset 选择 Next.js，构建命令和输出目录保持默认。配置：
 
 ```dotenv
-BACKEND_API_URL=http://your-backend-origin
+BACKEND_API_URL=http://43.167.160.55
 NEXT_PUBLIC_SITE_URL=https://your-project.vercel.app
 ```
 
-`BACKEND_API_URL` 只在 Vercel 构建与代理层使用，不会暴露给浏览器。前端继续请求同源 `/api/*`，Vercel 会在服务器侧转发到后端，因此不需要在浏览器里配置 CORS，也不会触发 HTTPS 页面请求 HTTP API 的混合内容限制。修改环境变量后需要重新部署一次。
+`BACKEND_API_URL` 只供 Next.js 服务端 rewrite 使用，不会暴露给浏览器，也不要写成 `NEXT_PUBLIC_BACKEND_API_URL`。浏览器继续请求 Vercel 同源的 `/api/*`，Vercel 再从服务端转发到后端，因此不会触发浏览器 CORS 或 HTTPS 页面直连 HTTP API 的混合内容限制。
 
-DeepSeek Key、数据文件路径等后端变量只配置在自托管服务器，不要重复放入 Vercel 前端环境。
+Production 和 Preview 环境都应配置 `BACKEND_API_URL`。修改变量后需要重新部署；若 Vercel 构建时缺少它，构建会直接失败，避免生成一个看似成功但 API 全部不可用的站点。
 
-## 可选的语言模型
-
-复制环境变量示例，然后填入自己的 Key：
-
-```bash
-cp .env.example .env.local
-```
-
-```dotenv
-DEEPSEEK_API_KEY=
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-flash
-MIRROR_DATA_FILE=.data/mirror-sessions.json
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-语言模型负责把开场草稿改写得更贴近用户原话，并为当前问题生成一组可编辑的回答起点。问题维度、安全检查、会话状态、结果结构和即时回退都由服务端控制；候选生成失败时会继续显示本地候选，因此不配置 Key 也能走通全部功能。
+DeepSeek Key、数据文件路径等变量只配置在后端服务器，不要放入 Vercel。知识库与后续 AI 能力也只在后端仓库演进。
 
 ## 工程结构
 
 ```text
-src/app/                 Next.js 页面与 Route Handlers
+src/app/                 Next.js 页面与 SEO 元数据
 src/components/landing  首页和可交互产品演示
 src/components/session  动态思想拓扑、四轮镜面与双轨回答体验
 src/components/result   思想角色、生成式画像、世界观坐标、证据、反例与思想实验
-src/lib/domain          领域模型、256 型档案、安全检查和本地推理引擎
-src/lib/server          JSON 存储、服务层与可选模型提供器
+src/lib                 前端使用的 256 型画像计算
 design-system/          本项目的视觉原则与设计令牌
 ```
 
-会话默认写入 `.data/mirror-sessions.json`。写入采用串行队列和临时文件原子替换，数据文件不会进入 Git。
+## 前端使用的接口
 
-## 主要接口
+这些路径都由 `next.config.ts` 重写到独立后端：
 
-| 方法 | 路径 | 用途 |
+| 方法 | 同源路径 | 用途 |
 | --- | --- | --- |
 | `POST` | `/api/sessions` | 创建探索 |
 | `GET / DELETE` | `/api/sessions/:id` | 读取或删除探索 |
