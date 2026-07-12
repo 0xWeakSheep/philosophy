@@ -40,6 +40,19 @@ npm run build
 npm start
 ```
 
+## Vercel 前端 + 自托管后端
+
+项目仍保持同一套 Next.js 代码，但可以把浏览器页面部署到 Vercel，并把 `/api/*` 交给独立服务器。Vercel 项目需要配置：
+
+```dotenv
+BACKEND_API_URL=http://your-backend-origin
+NEXT_PUBLIC_SITE_URL=https://your-project.vercel.app
+```
+
+`BACKEND_API_URL` 只在 Vercel 构建与代理层使用，不会暴露给浏览器。前端继续请求同源 `/api/*`，Vercel 会在服务器侧转发到后端，因此不需要在浏览器里配置 CORS，也不会触发 HTTPS 页面请求 HTTP API 的混合内容限制。修改环境变量后需要重新部署一次。
+
+DeepSeek Key、数据文件路径等后端变量只配置在自托管服务器，不要重复放入 Vercel 前端环境。
+
 ## 可选的语言模型
 
 复制环境变量示例，然后填入自己的 Key：
