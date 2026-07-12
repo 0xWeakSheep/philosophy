@@ -1,0 +1,27 @@
+[Unit]
+Description=Philosophy Mirror Room backend
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=philosophy
+Group=philosophy
+WorkingDirectory=/opt/philosophy-backend/current
+EnvironmentFile=/etc/philosophy-backend.env
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+Environment=MIRROR_DATA_FILE=/var/lib/philosophy/mirror-sessions.json
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/philosophy
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
