@@ -3,10 +3,13 @@ import {
   confirmSessionTopic,
   createCounterfactualExperiment,
   createLocalSession,
+  ensureLocalAnswerSuggestions,
   updateHypothesisStance,
 } from "../domain/engine";
 import { DomainError } from "../domain/errors";
+import { assessSafety } from "../domain/safety";
 import type {
+  AnswerSuggestion,
   CounterfactualExperiment,
   Dimension,
   HypothesisStance,
@@ -15,12 +18,18 @@ import type {
   SessionFeedback,
   SessionResult,
 } from "../domain/schemas";
+import { AnswerSuggestionSchema } from "../domain/schemas";
 import {
   createLanguageProviderFromEnv,
   type LanguageRefinement,
   type MirrorLanguageProvider,
 } from "./provider";
 import { getDefaultSessionStore, type SessionStore } from "./session-store";
+
+export interface AnswerSuggestionSet {
+  readonly suggestions: AnswerSuggestion[];
+  readonly source: "local" | "deepseek";
+}
 
 const hasRefinement = (refinement: LanguageRefinement): boolean =>
   refinement.topic !== undefined ||
@@ -55,7 +64,9 @@ function applyRefinement(
   }
 
   const safeQuestion =
-    refinement.question !== undefined && isOneQuestion(refinement.question)
+    refinement.question !== undefined &&
+    isOneQuestion(refinement.question) &&
+    isDimensionAligned(refinement.question, "field")
       ? refinement.question
       : undefined;
 
@@ -71,10 +82,47 @@ function applyRefinement(
   };
 }
 
+function isDimensionAligned(question: string, dimension: Dimension): boolean {
+  switch (dimension) {
+    case "field":
+      return /条件|资源|制度|规则|权力|成本|选择之前|共同观念/u.test(question);
+    case "ontology":
+      return /真实|存在|事实|现实/u.test(question) && /承认|相信|理解|物质|社会/u.test(question);
+    case "phenomenology":
+      return (
+        /证据|线索|判断/u.test(question) && /修正|确信|进入|先看|直觉|数据|个案/u.test(question)
+      );
+    case "teleology":
+      return (
+        /改变|变量|干预|先改|更换/u.test(question) &&
+        /机制|结果|观念|资源|规则|激励/u.test(question)
+      );
+  }
+}
+
 function assertUnchanged(expected: MirrorSession, current: MirrorSession): void {
   if (current.updatedAt !== expected.updatedAt) {
     throw new DomainError("会话刚刚在另一个请求中更新，请重试。", "CONFLICT", 409);
   }
+}
+
+function validateGeneratedSuggestions(value: unknown): AnswerSuggestion[] | null {
+  const parsed = AnswerSuggestionSchema.array().length(4).safeParse(value);
+  if (!parsed.success) {
+    return null;
+  }
+  const uniqueLenses = new Set(parsed.data.map((suggestion) => suggestion.lens));
+  const uniqueContent = new Set(parsed.data.map((suggestion) => suggestion.content));
+  const combined = parsed.data.map((suggestion) => suggestion.content).join("\n");
+  if (
+    uniqueLenses.size !== 4 ||
+    uniqueContent.size !== parsed.data.length ||
+    /唯心|唯物|主义者/u.test(combined) ||
+    !assessSafety(combined).safe
+  ) {
+    return null;
+  }
+  return parsed.data;
 }
 
 export class MirrorSessionService {
@@ -105,7 +153,9 @@ export class MirrorSessionService {
     if (session === null) {
       throw new DomainError("没有找到这次探索。", "NOT_FOUND", 404);
     }
-    return session;
+    // Old persisted sessions have no `suggestions` field. Hydrate their current
+    // question at the response boundary without rewriting or invalidating them.
+    return ensureLocalAnswerSuggestions(session);
   }
 
   public confirmTopic(id: string, topic: string): Promise<MirrorSession> {
@@ -114,26 +164,47 @@ export class MirrorSessionService {
 
   public async answer(id: string, answer: string): Promise<MirrorSession> {
     const current = await this.get(id);
-    let next = advanceLocalSession(current, answer);
-
-    if (this.provider !== null && next.stage === "questioning") {
-      const question = next.messages.findLast((message) => message.role === "mirror");
-      if (question?.dimension !== undefined) {
-        const refinement = await this.provider.refineQuestion({
-          topic: next.topic,
-          marker: next.marker,
-          dimension: question.dimension,
-          localQuestion: question.content,
-          messages: next.messages,
-        });
-        next = applyRefinement(next, refinement);
-      }
-    }
+    const next = advanceLocalSession(current, answer);
 
     return this.store.update(id, (latest) => {
       assertUnchanged(current, latest);
       return next;
     });
+  }
+
+  public async suggestions(id: string): Promise<AnswerSuggestionSet> {
+    const session = ensureLocalAnswerSuggestions(await this.get(id));
+    if (
+      (session.stage !== "topic_confirm" && session.stage !== "questioning") ||
+      session.questionIndex >= session.totalQuestions
+    ) {
+      throw new DomainError("当前没有等待回答的问题。", "INVALID_STAGE", 409);
+    }
+
+    const localSuggestions = session.suggestions;
+    const question = session.messages.findLast(
+      (message) => message.role === "mirror" && message.dimension !== undefined,
+    );
+    if (
+      this.provider?.suggestAnswers === undefined ||
+      question === undefined ||
+      question.dimension === undefined
+    ) {
+      return { suggestions: localSuggestions, source: "local" };
+    }
+
+    const generated = await this.provider.suggestAnswers({
+      topic: session.topic,
+      marker: session.marker,
+      dimension: question.dimension,
+      question: question.content,
+      messages: session.messages,
+      localSuggestions,
+    });
+    const validated = validateGeneratedSuggestions(generated);
+    return validated === null
+      ? { suggestions: localSuggestions, source: "local" }
+      : { suggestions: validated, source: "deepseek" };
   }
 
   public async getResult(id: string): Promise<SessionResult> {

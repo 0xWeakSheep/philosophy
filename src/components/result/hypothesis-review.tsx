@@ -17,16 +17,16 @@ interface HypothesisReviewProps {
   onSessionChange: (session: MirrorSession) => void;
 }
 
-const stanceOptions: Array<{
-  value: HypothesisStance;
-  label: string;
-  Icon: typeof CheckCircle;
-}> = [
+const stanceOptions = [
   { value: "resonates", label: "像我", Icon: CheckCircle },
   { value: "rejects", label: "不像", Icon: XCircle },
   { value: "situational", label: "只在这里", Icon: MapPinArea },
-  { value: "counterexample", label: "我有反例", Icon: ArrowCounterClockwise },
-];
+  { value: "counterexample", label: "有反例", Icon: ArrowCounterClockwise },
+] as const satisfies ReadonlyArray<{
+  value: HypothesisStance;
+  label: string;
+  Icon: typeof CheckCircle;
+}>;
 
 export function HypothesisReview({
   sessionId,
@@ -53,131 +53,101 @@ export function HypothesisReview({
         body: JSON.stringify({ hypothesisId, stance, note: note?.trim() || undefined }),
       });
       const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(typeof payload.error === "string" ? payload.error : "这次修正没有保存成功");
-      }
+      if (!response.ok) throw new Error("保存失败");
       onSessionChange(unwrapSession(payload));
       setOpenNote(null);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "保存失败，请再试一次");
+      setError(reason instanceof Error ? reason.message : "保存失败");
     } finally {
       setPending(null);
     }
   }
 
   return (
-    <section aria-labelledby="hypothesis-title" className="mt-16 sm:mt-24">
-      <div className="max-w-3xl">
-        <h2 id="hypothesis-title" className="font-serif text-3xl leading-tight sm:text-4xl">
-          这些只是读法，不是判决
-        </h2>
-        <p className="mt-4 leading-relaxed text-[var(--muted)]">
-          每条读法都必须回到你说过的话。反驳它，会让镜面比“同意”更清楚。
-        </p>
-      </div>
+    <section aria-labelledby="hypothesis-title" className="mt-9">
+      <h2 id="hypothesis-title" className="font-serif text-2xl">
+        三条临时读法
+      </h2>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+      <div className="mt-5 border-t border-[var(--line)]">
         {hypotheses.map((hypothesis, index) => (
-          <article
-            key={hypothesis.id}
-            className={`border border-[var(--line)] bg-[var(--paper-deep)] p-5 sm:p-7 ${index % 2 === 1 ? "lg:translate-y-8" : ""}`}
-          >
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="font-mono text-xs tracking-[0.12em] text-[var(--accent)]">
-                  可能的读法
+          <article key={hypothesis.id} className="border-b border-[var(--line)] py-6">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+              <div className="min-w-0">
+                <p className="mono-label text-[9px] text-[var(--accent)]">0{index + 1}</p>
+                <h3 className="mt-2 font-serif text-2xl leading-tight">{hypothesis.title}</h3>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                  {hypothesis.interpretation}
                 </p>
-                <h3 className="mt-3 font-serif text-2xl leading-tight">{hypothesis.title}</h3>
               </div>
-              {hypothesis.stance !== "unreviewed" ? (
-                <span className="border border-[var(--line)] px-2.5 py-1 font-mono text-[10px] text-[var(--muted)]">
-                  已被你修正
-                </span>
-              ) : null}
+
+              <div className="grid grid-cols-4 gap-1.5 lg:w-[21rem]">
+                {stanceOptions.map(({ value, label, Icon }) => {
+                  const selected = hypothesis.stance === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => void submitStance(hypothesis.id, value)}
+                      disabled={pending === hypothesis.id}
+                      className={`inline-flex min-h-11 items-center justify-center gap-1 border px-1 text-[11px] ${
+                        selected
+                          ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]"
+                          : "border-[var(--line)] hover:border-[var(--accent)]"
+                      }`}
+                      aria-pressed={selected}
+                    >
+                      <Icon aria-hidden="true" size={14} /> {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <p className="mt-5 leading-relaxed text-[var(--muted)]">{hypothesis.interpretation}</p>
-
             {hypothesis.stanceNote ? (
-              <div className="mt-5 border-l-2 border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3">
-                <p className="font-mono text-[10px] tracking-[0.12em] text-[var(--accent)]">
-                  你补上的反例
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">
-                  {hypothesis.stanceNote}
-                </p>
-              </div>
+              <p className="mt-4 border-l-2 border-[var(--accent)] pl-3 text-sm">
+                {hypothesis.stanceNote}
+              </p>
             ) : null}
 
-            <div className="mt-7 grid gap-5 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-[var(--ink)]">它依据了什么</p>
-                <div className="mt-3 space-y-3">
+            <details className="mt-4 text-sm">
+              <summary className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-[var(--muted)]">
+                <Question aria-hidden="true" size={15} /> 查看原话依据
+              </summary>
+              <div className="grid gap-5 pb-2 pt-3 sm:grid-cols-2">
+                <div className="space-y-2">
                   {hypothesis.evidence.map((evidence) => (
                     <blockquote
                       key={evidence.id}
-                      className="border-l border-[var(--accent)] pl-3 text-sm leading-relaxed text-[var(--muted)]"
+                      className="border-l border-[var(--accent)] pl-3 text-[var(--muted)]"
+                    >
+                      “{evidence.quote}”
+                    </blockquote>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  {hypothesis.counterEvidence.map((evidence) => (
+                    <blockquote
+                      key={evidence.id}
+                      className="border-l border-[var(--line)] pl-3 text-[var(--muted)]"
                     >
                       “{evidence.quote}”
                     </blockquote>
                   ))}
                 </div>
               </div>
-              <div>
-                <p className="flex items-center gap-2 text-xs font-medium text-[var(--ink)]">
-                  <Question aria-hidden="true" size={15} /> 哪里可能看错
-                </p>
-                {hypothesis.counterEvidence.length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    {hypothesis.counterEvidence.map((evidence) => (
-                      <blockquote
-                        key={evidence.id}
-                        className="border-l border-[var(--line)] pl-3 text-sm leading-relaxed text-[var(--muted)]"
-                      >
-                        “{evidence.quote}”
-                      </blockquote>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
-                    目前没有足够反证。你可以主动补上一条。
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {stanceOptions.map(({ value, label, Icon }) => {
-                const selected = hypothesis.stance === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => submitStance(hypothesis.id, value)}
-                    disabled={pending === hypothesis.id}
-                    className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 border px-2 text-xs transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-wait disabled:opacity-55 ${
-                      selected
-                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--paper)]"
-                        : "border-[var(--line)] text-[var(--ink)] hover:border-[var(--accent)]"
-                    }`}
-                    aria-pressed={selected}
-                  >
-                    <Icon aria-hidden="true" size={15} /> {label}
-                  </button>
-                );
-              })}
-            </div>
+            </details>
 
             {openNote === hypothesis.id ? (
               <form
-                className="mt-5 border-l-2 border-[var(--accent)] pl-4"
+                className="mt-4 max-w-2xl border-l-2 border-[var(--accent)] pl-4"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void submitStance(hypothesis.id, "counterexample", notes[hypothesis.id]);
                 }}
               >
-                <label htmlFor={`counterexample-${hypothesis.id}`} className="text-sm font-medium">
-                  写下那个反例
+                <label htmlFor={`counterexample-${hypothesis.id}`} className="text-sm">
+                  写下反例
                 </label>
                 <textarea
                   id={`counterexample-${hypothesis.id}`}
@@ -185,17 +155,16 @@ export function HypothesisReview({
                   onChange={(event) =>
                     setNotes((current) => ({ ...current, [hypothesis.id]: event.target.value }))
                   }
-                  rows={3}
+                  rows={2}
                   maxLength={600}
-                  className="mt-2 w-full resize-y border border-[var(--line)] bg-transparent p-3 text-base outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                  placeholder="什么时候，同样的事情并没有让你这样理解？"
+                  className="mt-2 w-full border border-[var(--line)] bg-transparent p-3 outline-none focus:border-[var(--accent)]"
                 />
                 <button
                   type="submit"
                   disabled={!notes[hypothesis.id]?.trim() || pending === hypothesis.id}
-                  className="mt-3 min-h-11 cursor-pointer bg-[var(--ink)] px-5 text-sm text-[var(--paper)] disabled:cursor-not-allowed disabled:opacity-45"
+                  className="mt-2 min-h-11 bg-[var(--ink)] px-5 text-sm text-[var(--paper)] disabled:opacity-45"
                 >
-                  把反例放进镜面
+                  保存反例
                 </button>
               </form>
             ) : null}
@@ -204,7 +173,7 @@ export function HypothesisReview({
       </div>
 
       {error ? (
-        <p className="mt-6 text-sm text-[var(--accent)]" role="alert">
+        <p className="mt-4 text-sm text-[var(--accent)]" role="alert">
           {error}
         </p>
       ) : null}

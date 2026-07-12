@@ -1,157 +1,130 @@
 "use client";
 
-import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react/ArrowCounterClockwise";
-import { EyeIcon } from "@phosphor-icons/react/Eye";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ArrowRightIcon } from "@phosphor-icons/react/ArrowRight";
+import { motion, useReducedMotion } from "motion/react";
+import Link from "next/link";
 import { useState } from "react";
+import { WorldviewCharacter } from "@/components/result/worldview-character";
 
-const lenses = {
-  cancellation: {
-    label: "临时取消了约会",
-    focus: "场域 · 默认规则",
-    reading: "约定是否成立，可能被你用来判断自己有没有被重视。",
-    question: "如果偶尔失约不等于不重视，你最担心失去的是什么？",
-    alternative: "也可能不是你的解释出了问题，而是对方确实反复越过了一条关系边界。",
+const choices = [
+  {
+    digit: 1,
+    label: "规则与资源",
+    family: "织序家族",
+    title: "新局育种者",
+    fieldState: "有界秩序",
+    nameToken: "整域",
   },
-  mature: {
-    label: "成熟的人",
-    focus: "本体 · 不可退让",
-    reading: "“成熟”在这里不像描述，更像一条决定你能否认可自己的准入规则。",
-    question: "如果成熟也允许生气，你担心自己会成为什么样的人？",
-    alternative: "也可能你并非害怕不成熟，只是不愿让一时情绪替你决定关系的走向。",
+  {
+    digit: 2,
+    label: "矛盾与限制",
+    family: "裂隙家族",
+    title: "分歧开路人",
+    fieldState: "张力场域",
+    nameToken: "裂域",
   },
-  should: {
-    label: "不应该",
-    focus: "现象 · 经验解释",
-    reading: "“不应该”把已经发生的感受，迅速变成了一项需要被纠正的证据。",
-    question: "生气先在保护一条边界，还是先证明你不够好？",
-    alternative: "也可能它只是你当下用来暂停行动的方法，并不代表你否认自己的感受。",
+  {
+    digit: 3,
+    label: "人的选择",
+    family: "星核家族",
+    title: "意义造境者",
+    fieldState: "中心场域",
+    nameToken: "枢域",
   },
-} as const;
-
-type LensId = keyof typeof lenses;
-type Verdict = "open" | "like" | "refute";
+  {
+    digit: 4,
+    label: "先不下结论",
+    family: "旷野家族",
+    title: "新境孵化者",
+    fieldState: "开放场域",
+    nameToken: "旷域",
+  },
+] as const;
 
 export function DevelopingDemo() {
-  const [activeLens, setActiveLens] = useState<LensId>("mature");
-  const [verdict, setVerdict] = useState<Verdict>("open");
+  const [active, setActive] = useState(2);
   const reduceMotion = useReducedMotion();
-  const lens = lenses[activeLens];
-
-  function selectLens(nextLens: LensId) {
-    setActiveLens(nextLens);
-    setVerdict("open");
-  }
+  const choice = choices[active] ?? choices[0];
+  const profile = {
+    code: `${choice.digit}–1–3–4`,
+    name: `${choice.nameToken}实核·凝视创生主义`,
+    archetypeFamily: choice.family,
+    archetypeTitle: choice.title,
+    axes: [
+      { key: "field", label: "场域", value: active, stateName: choice.fieldState },
+      { key: "ontology", label: "本体", value: 0, stateName: "稳定实在" },
+      { key: "phenomenology", label: "现象", value: 2, stateName: "聚焦经验" },
+      { key: "teleology", label: "目的", value: 3, stateName: "开放生成" },
+    ],
+    emblem: [active, 0, 2, 3] as const,
+    traits: ["先看场景", "确认事实", "追踪焦点", "创造新路"],
+  };
 
   return (
-    <section className="mirror-stage w-full" aria-label="一句话显影互动演示">
-      <div className="flex min-h-14 items-center justify-between border-b hairline px-4 sm:px-5">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <EyeIcon aria-hidden="true" size={18} weight="regular" />
-          一句话显影器
-        </div>
-        <span className="mono-label text-[11px] text-[var(--muted)]">可点击原句</span>
+    <section className="mirror-stage w-full" aria-label="世界观角色试玩">
+      <div className="flex min-h-12 items-center justify-between border-b hairline px-4">
+        <span className="mono-label text-[10px] text-[var(--accent)]">试玩 01 / 04</span>
+        <span className="text-xs text-[var(--muted)]">选一项，角色就会变</span>
       </div>
 
-      <div className="p-5 sm:p-7">
-        <p className="mb-3 text-xs text-[var(--muted)]">一件反复发生的事</p>
-        <blockquote className="display-type text-[clamp(1.35rem,3vw,2rem)] leading-[1.65] tracking-[-0.025em]">
-          他
-          <button
-            aria-pressed={activeLens === "cancellation"}
-            className="demo-token"
-            onClick={() => selectLens("cancellation")}
-            type="button"
+      <div className="grid min-h-[31rem] sm:grid-cols-[0.92fr_1.08fr]">
+        <div className="flex flex-col justify-between border-b hairline p-5 sm:border-r sm:border-b-0 sm:p-6">
+          <div>
+            <p className="text-xs text-[var(--muted)]">结果不同，你第一眼先看哪里？</p>
+            <div className="mt-5 grid gap-2">
+              {choices.map((item, index) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  aria-pressed={active === index}
+                  onClick={() => setActive(index)}
+                  className="group flex min-h-12 items-center justify-between border-b border-[var(--line)] px-1 text-left text-sm transition-colors hover:text-[var(--accent)] aria-pressed:border-[var(--accent)] aria-pressed:text-[var(--accent)]"
+                >
+                  <span>{item.label}</span>
+                  <span className="mono-label text-[10px] opacity-55">0{item.digit}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <Link
+            className="mt-7 inline-flex min-h-11 items-center gap-2 text-sm font-medium"
+            href="/explore"
           >
-            临时取消了约会
-          </button>
-          ，我很生气，但
-          <button
-            aria-pressed={activeLens === "mature"}
-            className="demo-token"
-            onClick={() => selectLens("mature")}
-            type="button"
-          >
-            成熟的人
-          </button>
-          <button
-            aria-pressed={activeLens === "should"}
-            className="demo-token"
-            onClick={() => selectLens("should")}
-            type="button"
-          >
-            不应该
-          </button>
-          为这种事生气。
-        </blockquote>
-      </div>
-
-      <div className="grid border-t hairline lg:grid-cols-[0.8fr_1.2fr]">
-        <div className="border-b hairline p-5 lg:border-r lg:border-b-0 sm:p-6">
-          <p className="mono-label text-[11px] text-[var(--accent)]">{lens.focus}</p>
-          <p className="mt-3 text-sm leading-7 text-[var(--muted)]">系统只提出读法，不宣布结论。</p>
+            生成我的思想角色
+            <ArrowRightIcon aria-hidden="true" size={17} />
+          </Link>
         </div>
 
-        <div className="min-h-[14.5rem] p-5 sm:p-6" aria-live="polite">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: reduceMotion ? 0 : -6 }}
-              initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-              key={`${activeLens}-${verdict}`}
-              transition={{ duration: reduceMotion ? 0 : 0.24, ease: "easeOut" }}
-            >
-              {verdict === "refute" ? (
-                <>
-                  <p className="text-xs font-medium text-[var(--accent)]">窗外的另一种可能</p>
-                  <p className="mt-3 text-base leading-7">{lens.alternative}</p>
-                  <p className="mt-4 border-l border-[var(--accent)] pl-3 text-sm leading-6 text-[var(--muted)]">
-                    好的判断也要容纳你的反例，以及现实里的权力与边界。
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm leading-7">{lens.reading}</p>
-                  <p className="mt-4 border-l border-[var(--accent)] pl-3 text-base font-medium leading-7">
-                    {lens.question}
-                  </p>
-                  {verdict === "like" ? (
-                    <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
-                      已保留为临时假设。它仍需要你的下一句话来确认。
-                    </p>
-                  ) : null}
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
+        <div className="relative grid min-h-[31rem] place-items-center overflow-hidden bg-[var(--paper-deep)] px-3 pt-3 pb-28">
+          <motion.div
+            key={choice.title}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 170, damping: 20 }}
+            className="w-full max-w-[22rem]"
+          >
+            <WorldviewCharacter embedded profile={profile} />
+          </motion.div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t hairline p-3 sm:px-5">
-        <button
-          aria-pressed={verdict === "like"}
-          className="min-h-11 rounded-[10px] border border-[var(--line)] px-3 text-sm transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface)] aria-pressed:border-[var(--accent)] aria-pressed:text-[var(--accent)]"
-          onClick={() => setVerdict("like")}
-          type="button"
-        >
-          这个读法像我
-        </button>
-        <button
-          aria-pressed={verdict === "refute"}
-          className="min-h-11 rounded-[10px] border border-[var(--line)] px-3 text-sm transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface)] aria-pressed:border-[var(--accent)] aria-pressed:text-[var(--accent)]"
-          onClick={() => setVerdict("refute")}
-          type="button"
-        >
-          我有反例
-        </button>
-        <button
-          aria-label="重置读法"
-          className="ml-auto inline-flex size-11 items-center justify-center rounded-[10px] text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--ink)]"
-          onClick={() => setVerdict("open")}
-          type="button"
-        >
-          <ArrowCounterClockwiseIcon aria-hidden="true" size={18} weight="regular" />
-        </button>
+          <div className="absolute right-4 bottom-4 left-4 border-t border-[var(--line)] bg-[var(--paper-deep)]/90 pt-3 backdrop-blur-sm">
+            <div className="flex items-end justify-between gap-4">
+              <div className="min-w-0">
+                <p className="mono-label text-[9px] text-[var(--muted)]">{choice.family}</p>
+                <p className="display-type mt-1 truncate text-2xl text-[var(--ink)]">
+                  {choice.title}
+                </p>
+                <p className="coordinate-type mt-1 text-base text-[var(--accent)]">
+                  {profile.code}
+                </p>
+              </div>
+              <span className="mono-label shrink-0 text-right text-[9px] text-[var(--accent)]">
+                16 角色
+                <br />
+                256 画像
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

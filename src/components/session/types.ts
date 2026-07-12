@@ -26,6 +26,14 @@ export interface SessionMessage {
   dimension?: DimensionKey;
 }
 
+export type AnswerSuggestionLens = "agency" | "conditions" | "integrated" | "uncertain";
+
+export interface AnswerSuggestion {
+  id: string;
+  content: string;
+  lens?: AnswerSuggestionLens;
+}
+
 export interface EvidenceItem {
   id: string;
   quote: string;
@@ -71,8 +79,14 @@ export interface MirrorSession {
   questionIndex: number;
   totalQuestions: number;
   messages: SessionMessage[];
+  suggestions?: AnswerSuggestion[];
   result?: SessionResult;
   riskFlags?: string[];
+}
+
+export interface AnswerSuggestionsPayload {
+  suggestions: AnswerSuggestion[];
+  source: string | undefined;
 }
 
 export interface CounterfactualExperiment {
@@ -100,4 +114,32 @@ export function unwrapSession(payload: unknown): MirrorSession {
     throw new Error("会话数据不完整");
   }
   return session;
+}
+
+export function unwrapAnswerSuggestions(payload: unknown): AnswerSuggestionsPayload {
+  if (typeof payload !== "object" || payload === null) {
+    throw new Error("候选回答格式不正确");
+  }
+
+  const object = payload as Record<string, unknown>;
+  if (!Array.isArray(object.suggestions)) {
+    throw new Error("候选回答不完整");
+  }
+
+  const suggestions = object.suggestions.filter(
+    (suggestion): suggestion is AnswerSuggestion =>
+      typeof suggestion === "object" &&
+      suggestion !== null &&
+      typeof (suggestion as Record<string, unknown>).id === "string" &&
+      typeof (suggestion as Record<string, unknown>).content === "string",
+  );
+
+  if (suggestions.length === 0) {
+    throw new Error("候选回答暂时不可用");
+  }
+
+  return {
+    suggestions: suggestions.slice(0, 4),
+    source: typeof object.source === "string" ? object.source : undefined,
+  };
 }

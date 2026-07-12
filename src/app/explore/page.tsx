@@ -1,13 +1,11 @@
-import { ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { IntakeForm } from "@/components/intake/intake-form";
 import { SiteHeader } from "@/components/site/site-header";
 
 export const metadata: Metadata = {
-  title: "带一件事进来",
-  description: "写下一件反复发生的关系困境，从一句具体的话开始显影。",
+  title: "带一个判断进来",
+  description: "写下一个具体的世界观判断，看看观念、选择、条件与结构如何进入你的解释。",
 };
 
 export default function ExplorePage() {
@@ -21,39 +19,16 @@ export default function ExplorePage() {
         <div aria-hidden="true" className="hero-grid absolute inset-0 -z-10 opacity-40" />
         <div className="site-shell grid gap-12 py-10 lg:grid-cols-12 lg:gap-10 lg:py-16">
           <section className="lg:col-span-4">
-            <Link
-              className="inline-flex min-h-11 items-center gap-2 text-sm text-[var(--muted)] transition-colors hover:text-[var(--ink)]"
-              href="/"
-            >
-              <ArrowLeftIcon aria-hidden="true" size={17} weight="regular" />
-              返回首页
-            </Link>
-            <p className="mono-label mt-12 text-[11px] text-[var(--accent)]">第一面镜子 · 原句</p>
+            <p className="mono-label text-[11px] text-[var(--accent)]">原判断</p>
             <h1 className="display-type mt-5 text-[clamp(2.7rem,5vw,4.8rem)] leading-[1.08]">
-              带一件反复发生的事进来
+              写下一个正在犹豫的判断
             </h1>
             <p className="mt-6 max-w-md text-base leading-8 text-[var(--muted)]">
-              不用写得正确，也不用先想通。具体比完整重要，真实比漂亮重要。
+              具体到一件事：你的判断，以及让你迟疑的地方。
             </p>
 
-            <ol className="mt-12 border-t hairline">
-              {[
-                ["01", "发生了什么"],
-                ["02", "最难受的是什么"],
-                ["03", "你通常怎么做"],
-              ].map(([number, label]) => (
-                <li
-                  className="grid grid-cols-[3rem_1fr] border-b hairline py-4 text-sm"
-                  key={number}
-                >
-                  <span className="mono-label text-xs text-[var(--accent)]">{number}</span>
-                  <span>{label}</span>
-                </li>
-              ))}
-            </ol>
-
-            <p className="mt-8 text-xs leading-6 text-[var(--muted)]">
-              如果你正面临即时危险或自伤风险，请先联系当地急救、危机热线或一位可信任的人。本工具不适合处理紧急情况。
+            <p className="mt-10 max-w-sm text-xs leading-6 text-[var(--muted)]">
+              即时危险请先联系急救或可信任的人。
             </p>
           </section>
 

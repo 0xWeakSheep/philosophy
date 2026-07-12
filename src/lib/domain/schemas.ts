@@ -20,6 +20,19 @@ export const ConfidenceSchema = z.enum(["low", "medium", "high"]);
 
 export const DimensionSignalSchema = z.enum(["order", "conflict", "center", "open"]);
 
+export const AnswerSuggestionLensSchema = z.enum([
+  "agency",
+  "conditions",
+  "integrated",
+  "uncertain",
+]);
+
+export const AnswerSuggestionSchema = z.object({
+  id: z.string().min(1),
+  lens: AnswerSuggestionLensSchema,
+  content: z.string().trim().min(4).max(240),
+});
+
 export const HypothesisStanceSchema = z.enum([
   "unreviewed",
   "resonates",
@@ -107,6 +120,8 @@ export const MirrorSessionSchema = z.object({
   questionIndex: z.number().int().min(0).max(5),
   totalQuestions: z.number().int().min(3).max(5),
   messages: z.array(MirrorMessageSchema),
+  // `default` keeps sessions written before answer suggestions were introduced readable.
+  suggestions: z.array(AnswerSuggestionSchema).max(4).default([]),
   result: SessionResultSchema.optional(),
   riskFlags: z.array(RiskFlagSchema),
   safetyMessage: z.string().min(1).optional(),
@@ -124,7 +139,7 @@ export const CreateSessionInputSchema = z
     intake: z.string().trim().min(8).max(4000).optional(),
   })
   .refine((value) => value.input !== undefined || value.intake !== undefined, {
-    message: "请写下一件具体发生过的事。",
+    message: "请写下一个具体判断，以及你为什么这样认为。",
   })
   .transform((value) => ({ input: value.input ?? value.intake ?? "" }));
 
@@ -167,6 +182,8 @@ export const SessionDatabaseSchema = z.object({
 export type Dimension = z.infer<typeof DimensionSchema>;
 export type SessionStage = z.infer<typeof SessionStageSchema>;
 export type RiskFlag = z.infer<typeof RiskFlagSchema>;
+export type AnswerSuggestionLens = z.infer<typeof AnswerSuggestionLensSchema>;
+export type AnswerSuggestion = z.infer<typeof AnswerSuggestionSchema>;
 export type MirrorMessage = z.infer<typeof MirrorMessageSchema>;
 export type EvidenceNode = z.infer<typeof EvidenceNodeSchema>;
 export type Hypothesis = z.infer<typeof HypothesisSchema>;

@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { DomainError } from "./errors";
 import { assessSafety } from "./safety";
 import type {
+  AnswerSuggestion,
+  AnswerSuggestionLens,
   CounterfactualExperiment,
   Dimension,
   DimensionReading,
@@ -15,29 +17,58 @@ import type {
   SessionResult,
 } from "./schemas";
 
-export const PROMPT_VERSION = "mirror-local-2026-07-11.1";
+export const PROMPT_VERSION = "mirror-local-2026-07-12.1";
 
 const NORMATIVE_MARKERS = [
-  "成年人就应该",
-  "成熟的人应该",
-  "真正爱一个人",
-  "如果在乎就会",
+  "只要足够努力",
+  "为自己的选择负责",
+  "只归因于努力",
+  "意识决定",
+  "观念决定",
+  "物质决定",
+  "环境决定",
+  "制度决定",
+  "本质上",
+  "客观事实",
+  "人性就是",
+  "真正的自由",
+  "现实就是",
+  "归根结底",
+  "天生",
+  "注定",
   "本来就应该",
   "必须",
+  "应当",
   "应该",
   "不应该",
   "不该",
   "正常",
-  "成熟",
-  "懂事",
   "总是",
   "从不",
   "至少",
   "不能",
-  "不配",
 ] as const;
 
 const EXTERNAL_CONDITION_TERMS = [
+  "资源",
+  "出身",
+  "贫困",
+  "收入",
+  "教育",
+  "制度",
+  "政策",
+  "法律",
+  "规则",
+  "算法",
+  "平台",
+  "技术",
+  "机器",
+  "AI",
+  "人工智能",
+  "身体",
+  "疾病",
+  "阶层",
+  "历史",
   "控制",
   "威胁",
   "暴力",
@@ -52,10 +83,10 @@ const EXTERNAL_CONDITION_TERMS = [
 ] as const;
 
 const DIMENSION_LABELS = {
-  field: "关系的默认规则",
-  ontology: "不可退让之物",
-  phenomenology: "经验如何出现",
-  teleology: "行动实际指向",
+  field: "现实的前置条件",
+  ontology: "什么算作真实",
+  phenomenology: "证据如何进入判断",
+  teleology: "改变从哪里发生",
 } as const satisfies Record<Dimension, string>;
 
 const normalizeWhitespace = (text: string): string => text.replace(/\s+/gu, " ").trim();
@@ -86,7 +117,7 @@ export function extractMarker(input: string): string {
 
   if (marker === undefined) {
     const firstClause = normalized.split(/[。！？；，]/u)[0] ?? normalized;
-    return clip(firstClause, 28) || "这件反复发生的事";
+    return clip(firstClause, 28) || "这个还没说清的判断";
   }
 
   const markerIndex = normalized.indexOf(marker);
@@ -103,17 +134,20 @@ export function extractMarker(input: string): string {
   const nextBreakInSuffix = suffix.search(clauseBreaks);
   const clauseEnd = nextBreakInSuffix < 0 ? normalized.length : markerIndex + nextBreakInSuffix;
   const clause = normalized.slice(previousBreak + 1, clauseEnd).trim();
-  const rule = clause.replace(/^(?:我)?(?:却|但|还是|总是)?(?:告诉|提醒|要求|劝)自己/u, "").trim();
+  const rule = clause
+    .replace(/^(?:但|却|而|可是|我仍|我也)?(?:觉得|认为|相信)/u, "")
+    .replace(/^(?:我)?(?:却|但|还是|总是)?(?:告诉|提醒|要求|劝)自己/u, "")
+    .trim();
   return clip(rule || clause, 36);
 }
 
 export function extractTopic(input: string, marker: string): string {
   const firstClause = clip(input.split(/[。！？\n]/u)[0] ?? input, 54);
   if (NORMATIVE_MARKERS.some((candidate) => marker.includes(candidate))) {
-    return `围绕“${marker}”，看清这条关系规则在保护什么`;
+    return `围绕“${marker}”，看清你把因果起点放在哪里`;
   }
 
-  return `在“${firstClause}”里，看清你真正想保护的东西`;
+  return `从“${firstClause}”出发，分开观念、选择与现实条件`;
 }
 
 function countQuestions(input: string): 4 | 5 {
@@ -150,32 +184,194 @@ export function questionFor(
     case 1:
       return {
         dimension,
-        content: `先停在“${marker}”这句话上。如果它不再是一条理所当然的规则，你最担心这段关系会变成什么样？`,
+        content: `先停在“${marker}”这句话上：在任何人作出选择之前，哪些物质条件、制度规则或共同观念已经先一步存在？`,
       };
     case 2:
       return {
         dimension,
         content:
-          "这件事里，哪一样东西一旦失去，就会让这段关系对你来说不再成立？请只说最不能退让的那一个。",
+          "这件事里，什么即使没人承认也会继续起作用，什么只有被理解、相信或承诺后才会成为现实？",
       };
     case 3:
       return {
         dimension,
         content:
-          "当那一刻发生时，你最先出现的是一种身体感受、一句解释，还是一个想立刻做的动作？请停在最先出现的那个瞬间。",
+          "回到你形成判断的第一刻：你先看见了人的动机与选择，还是资源、位置和限制；后来有什么证据让你修正，或更确信原来的解释？",
       };
     case 4:
       return {
         dimension,
-        content: `你刚才写到“${latestUserQuote(messages)}”。当你那样反应时，你更像是在保护什么，还是在避免什么？`,
+        content: `你刚才写到“${latestUserQuote(messages)}”。如果只能改变一个变量，你会先改人的观念与意愿，还是资源、规则与激励；它会通过什么机制改变结果？`,
       };
     default:
       return {
         dimension,
-        content:
-          "现在把镜子转向窗外。如果暂时不把问题放在你身上，对方的选择、权力差或现实条件中，哪一项也应该承担解释？",
+        content: "谁有能力把自己的解释变成规则，而这套解释一旦失败，成本主要由谁承担？",
       };
   }
+}
+
+function localSuggestion(
+  questionIndex: number,
+  lens: AnswerSuggestionLens,
+  content: string,
+): AnswerSuggestion {
+  return {
+    id: `local-${questionIndex}-${lens}`,
+    lens,
+    content,
+  };
+}
+
+/**
+ * Immediate, deterministic options for the currently visible question.
+ *
+ * They deliberately keep four different causal starting points in view. The
+ * language provider may later replace them, but a slow or missing provider
+ * must never leave the user facing an empty typing-only state.
+ */
+export function localAnswerSuggestionsFor(
+  questionIndex: number,
+  marker: string,
+  messages: readonly MirrorMessage[],
+): AnswerSuggestion[] {
+  switch (questionIndex) {
+    case 1:
+      return [
+        localSuggestion(
+          questionIndex,
+          "conditions",
+          "我会先看资源、身体和制度规则，因为它们在个人选择之前就限定了可选项。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "agency",
+          "我会先看共同观念和社会期待，因为它们会影响人如何理解处境、想象可能性。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "integrated",
+          "我认为条件决定行动成本，观念决定人怎样回应，二者会在具体选择里相互作用。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "uncertain",
+          `我暂时分不清“${clip(marker, 18)}”是现实限制，还是被反复相信后形成的规则。`,
+        ),
+      ];
+    case 2:
+      return [
+        localSuggestion(
+          questionIndex,
+          "conditions",
+          "我认为资源、身体和技术限制即使没人承认，也会继续产生后果。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "agency",
+          "我认为身份、公平和承诺需要被理解与共同相信，才会成为社会现实。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "integrated",
+          "我认为观念可以沉淀成制度，制度又会产生不依赖个人意愿的现实后果。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "uncertain",
+          "我更容易相信可观察的结果，但还不确定它能否完整解释意义和责任。",
+        ),
+      ];
+    case 3:
+      return [
+        localSuggestion(
+          questionIndex,
+          "conditions",
+          "我最先注意到资源、位置和结果差异，之后才把个人动机放进解释。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "agency",
+          "我先看人的意图和选择，再用事实与数据检查这种解释是否站得住。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "integrated",
+          "我会同时比较人的选择和所处条件，最能动摇我的是持续出现的反例。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "uncertain",
+          "我常凭第一印象形成判断，还没想清哪一种证据足以让我改口。",
+        ),
+      ];
+    case 4:
+      return [
+        localSuggestion(
+          questionIndex,
+          "conditions",
+          "我会先改规则、资源或激励，因为它们能直接改变人面对的可选项。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "agency",
+          "我会先改理解和意愿，因为行动方式要先从人如何看待处境开始变化。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "integrated",
+          "我会同时做一个最小规则调整和一个观念实验，比较哪一边先带来结果。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "uncertain",
+          `我需要先确认“${latestUserQuote(messages)}”里哪一层是瓶颈，否则改变任何一边都可能无效。`,
+        ),
+      ];
+    default:
+      return [
+        localSuggestion(
+          questionIndex,
+          "conditions",
+          "我会先看谁掌握资源和规则制定权，因为他们更容易把解释变成现实。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "agency",
+          "我认为多数人的共同相信也能形成规则，但这不代表结果一定公平。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "integrated",
+          "我会同时看谁能定义问题、谁能拒绝，以及失败成本最终落在谁身上。",
+        ),
+        localSuggestion(
+          questionIndex,
+          "uncertain",
+          "我还需要知道谁拥有退出权和议价能力，才能判断责任与成本是否对称。",
+        ),
+      ];
+  }
+}
+
+export function ensureLocalAnswerSuggestions(session: MirrorSession): MirrorSession {
+  const hasOpenQuestion =
+    (session.stage === "topic_confirm" || session.stage === "questioning") &&
+    session.questionIndex < session.totalQuestions;
+  if (!hasOpenQuestion) {
+    return session.suggestions.length === 0 ? session : { ...session, suggestions: [] };
+  }
+  if (session.suggestions.length >= 3) {
+    return session;
+  }
+  return {
+    ...session,
+    suggestions: localAnswerSuggestionsFor(
+      session.questionIndex + 1,
+      session.marker,
+      session.messages,
+    ),
+  };
 }
 
 function createSafetySession(
@@ -194,6 +390,7 @@ function createSafetySession(
     questionIndex: 0,
     totalQuestions: 4,
     messages: [makeMessage("user", input, now), makeMessage("mirror", safetyMessage, now)],
+    suggestions: [],
     riskFlags: [...riskFlags],
     safetyMessage,
     experiments: [],
@@ -230,6 +427,7 @@ export function createLocalSession(input: string, now = new Date()): MirrorSessi
       intakeMessage,
       makeMessage("mirror", firstQuestion.content, timestamp, firstQuestion.dimension),
     ],
+    suggestions: localAnswerSuggestionsFor(1, marker, [intakeMessage]),
     riskFlags: [],
     experiments: [],
     provider: "local",
@@ -251,12 +449,12 @@ export function confirmSessionTopic(
     throw new DomainError("结果生成后不能再修改本次议题。", "INVALID_STAGE", 409);
   }
 
-  return {
+  return ensureLocalAnswerSuggestions({
     ...session,
     topic,
     stage: "questioning",
     updatedAt: now.toISOString(),
-  };
+  });
 }
 
 function userMessages(messages: readonly MirrorMessage[]): MirrorMessage[] {
@@ -299,10 +497,10 @@ function dimensionReading(
   const message = byDimension(messages, dimension);
   const source = message ?? fallbackMessage(messages, fallbackIndex);
   const prefixes = {
-    field: "你把这句话放在关系能否成立的背景里",
-    ontology: "你把这件事靠近了一个不可轻易协商的核心",
-    phenomenology: "你的经验先以感受、解释或动作向你显现",
-    teleology: "你的反应不只是在回应当下，也在朝某个方向用力",
+    field: "你把选择放进了它发生之前的条件里",
+    ontology: "你在区分不依赖相信的事实与依赖共同承认的现实",
+    phenomenology: "你的判断从某类线索开始，也为其他证据留下了位置",
+    teleology: "你把改变首先放在一个具体的作用变量上",
   } as const satisfies Record<Dimension, string>;
 
   const signal = inferDimensionSignal(source.content);
@@ -318,11 +516,10 @@ function dimensionReading(
 
 function inferDimensionSignal(text: string): "order" | "conflict" | "center" | "open" {
   const scores = {
-    order: (text.match(/应该|必须|规则|稳定|正常|承诺|一直|至少|约定|本来/gu) ?? []).length,
-    conflict: (text.match(/但是|可是|一边|另一边|矛盾|冲突|又|却|怕|希望|不要|避免/gu) ?? [])
-      .length,
-    center: (text.match(/最不能|不可退让|核心|底线|失去|重要|认真对待|不再成立/gu) ?? []).length,
-    open: (text.match(/不知道|说不清|也许|可能|不确定|无法|沉默|空|算了/gu) ?? []).length,
+    order: (text.match(/规律|客观|事实|必然|制度|规则|机制|因果|数据|资源/gu) ?? []).length,
+    conflict: (text.match(/但是|可是|一边|另一边|矛盾|冲突|又|却|不确定|同时/gu) ?? []).length,
+    center: (text.match(/意志|选择|意识|观念|动机|自由|责任|相信|理解|意义/gu) ?? []).length,
+    open: (text.match(/不知道|说不清|也许|可能|未知|证据|例外|无法|怀疑|动摇/gu) ?? []).length,
   };
   const ranked = Object.entries(scores).sort((left, right) => right[1] - left[1]);
   const first = ranked[0];
@@ -334,37 +531,67 @@ function inferDimensionSignal(text: string): "order" | "conflict" | "center" | "
 
 function findExternalFactors(text: string): string[] {
   const factors: string[] = [];
-  if (/(?:控制|威胁|暴力|羞辱|强迫)/u.test(text)) {
-    factors.push("控制、威胁或现实边界是否被侵犯");
+  if (/(?:资源|出身|贫困|收入|经济|教育|家庭|阶层)/u.test(text)) {
+    factors.push("资源、教育与起点怎样改变可选项和行动成本");
   }
-  if (/(?:上司|领导|公司|工作|职位|学校|老师)/u.test(text)) {
-    factors.push("组织角色带来的权力差");
+  if (/(?:制度|政策|法律|规则|公司|学校|组织|平台|算法)/u.test(text)) {
+    factors.push("正式规则与实际激励是否把结果推向了某个方向");
   }
-  if (/(?:钱|经济|收入|房租|债务|资源)/u.test(text)) {
-    factors.push("经济与资源约束");
+  if (/(?:身体|疾病|年龄|技术|机器|AI|人工智能)/iu.test(text)) {
+    factors.push("身体与技术条件中，哪些限制不会因改变想法而消失");
   }
-  if (/(?:父母|家长|家庭|孩子|长辈)/u.test(text)) {
-    factors.push("家庭角色与代际期待");
+  if (/(?:权力|身份|性别|阶层|控制|威胁|暴力|话语权)/u.test(text)) {
+    factors.push("谁拥有定义问题、制定规则和退出的权力");
+  }
+  if (/(?:历史|传统|路径|过去|长期)/u.test(text)) {
+    factors.push("历史路径和已有成本怎样限制当下能够改变的范围");
   }
   if (factors.length === 0) {
-    factors.push("对方是否持续承担承诺与沟通责任");
-    factors.push("关系中的决定权和退路是否对等");
+    factors.push("哪些物质或身体限制不会因改变想法而消失");
+    factors.push("谁拥有制定规则、分配机会和承担失败成本的权力");
+    factors.push("哪些共同观念已经沉淀成制度，并产生现实后果");
   }
   return factors;
 }
 
-function extractCoreValue(text: string): string {
-  const normalized = normalizeWhitespace(text);
-  const explicit = normalized.match(
-    /(?:最不能退让的|最不能失去的|不能失去的|最重要的|我最在意的)(?:是|就是)([^，。！？；]{2,28})/u,
-  )?.[1];
-  if (explicit !== undefined) {
-    return clip(explicit, 24);
-  }
+type WorldviewOrientation = "agency" | "conditions" | "layered";
 
-  const firstClause = normalized.split(/[，。！？；]/u)[0] ?? normalized;
-  return clip(firstClause.replace(/^我(?:觉得|担心|希望|想要)?/u, ""), 24);
+function inferWorldviewOrientation(text: string): WorldviewOrientation {
+  const agencyScore = (
+    text.match(/观念|意识|意志|选择|努力|动机|自由|责任|相信|理解|意义|态度|想法/gu) ?? []
+  ).length;
+  const conditionScore = (
+    text.match(/资源|条件|出身|制度|结构|身体|技术|规则|激励|权力|环境|阶层|数据|物质|经济/gu) ?? []
+  ).length;
+
+  if (agencyScore - conditionScore >= 2) return "agency";
+  if (conditionScore - agencyScore >= 2) return "conditions";
+  return "layered";
 }
+
+const ORIENTATION_COPY = {
+  agency: {
+    title: "这次判断更接近观念与选择优先",
+    interpretation:
+      "如果借用唯心与唯物这组词，你这次更先相信人的理解、意志和选择具有因果力量。这不等于你否认物质现实。",
+    core: "在这次议题里，你先从观念与选择解释结果。边界在于：哪些条件不会因想法改变而消失。",
+  },
+  conditions: {
+    title: "这次判断更接近物质条件优先",
+    interpretation:
+      "如果借用唯心与唯物这组词，你这次更先把选择发生之前的条件放进因果链。这不等于宿命，也不等于人无需负责。",
+    core: "在这次议题里，你先从前置条件解释结果。边界在于：你仍愿意为人的选择保留多少作用。",
+  },
+  layered: {
+    title: "这次判断呈现出分层因果",
+    interpretation:
+      "你没有把结果完全交给观念或条件。观念组织行动，条件限定可能性，共同观念又可能沉淀成制度。单一标签暂时装不下这条因果链。",
+    core: "你没有把结果完全交给观念或条件。你真正关心的是：哪一层先改变，另一层才会跟着动。",
+  },
+} as const satisfies Record<
+  WorldviewOrientation,
+  { readonly title: string; readonly interpretation: string; readonly core: string }
+>;
 
 export function buildSessionResult(session: MirrorSession, now = new Date()): SessionResult {
   const field = byDimension(session.messages, "field") ?? fallbackMessage(session.messages, 1);
@@ -377,51 +604,52 @@ export function buildSessionResult(session: MirrorSession, now = new Date()): Se
   const allText = userMessages(session.messages)
     .map((message) => message.content)
     .join("\n");
+  const orientation = inferWorldviewOrientation(allText);
+  const orientationCopy = ORIENTATION_COPY[orientation];
 
   const hypotheses: Hypothesis[] = [
     {
       id: randomUUID(),
-      title: "你在保护的也许是一条关系规则",
-      interpretation: `触发你的可能不只是一次事件，而是“${session.marker}”背后的规则没有被共同承认。`,
+      title: orientationCopy.title,
+      interpretation: orientationCopy.interpretation,
       evidence: [
-        evidenceNode(field, "这句话支撑了你对关系背景和默认规则的描述。"),
-        evidenceNode(ontology, "这句话显示了规则背后不可轻易退让的东西。"),
+        evidenceNode(field, "这句话显示你如何安排选择发生之前的条件。"),
+        evidenceNode(teleology, "这句话显示你认为改变应该先落在哪一层。"),
       ],
       counterEvidence: [
-        evidenceNode(teleology, "这句话也可能说明，你首先在处理一个现实边界，而不是维护抽象规则。"),
+        evidenceNode(ontology, "这句话可能支持另一种因果起点，仍需要把作用机制说清。"),
       ],
       stance: "unreviewed",
     },
     {
       id: randomUUID(),
-      title: "感受之后，另一套自我要求可能紧跟着出现",
-      interpretation: "你不仅在经历这件事，也可能在判断自己的感受是否足够合理、成熟或值得被看见。",
-      evidence: [
-        evidenceNode(phenomenology, "这句话保留了经验最先出现的方式，而不是事后的完整解释。"),
-      ],
-      counterEvidence: [
-        evidenceNode(
-          ontology,
-          "这句话也支持另一种读法：你的感受可能在回应真实损失，并非来自自我要求。",
-        ),
-      ],
-      stance: "unreviewed",
-    },
-    {
-      id: randomUUID(),
-      title: "行动可能同时在争取被看见和避免失去关系",
+      title: "你的责任判断没有完全跟着因果判断走",
       interpretation:
-        "同一个反应里可以有两股力量：一股想让重要之物被承认，另一股想避免局面走到无法挽回。",
-      evidence: [evidenceNode(teleology, "这句话呈现了行动实际保护或回避的方向。")],
+        "什么造成了结果，与谁仍应为选择负责，并不是同一个问题。你的表达可能在两者之间保留了一段没有被抹平的张力。",
+      evidence: [
+        evidenceNode(ontology, "这句话显示你为真实、主体或责任保留了什么位置。"),
+        evidenceNode(teleology, "这句话显示责任如何影响你选择改变的变量。"),
+      ],
       counterEvidence: [
-        evidenceNode(field, "这句话也可能说明你的方向很单一，只是在要求一条清楚边界。"),
+        evidenceNode(phenomenology, "这句话也可能只是在描述因果证据，你未必已经作出责任判断。"),
+      ],
+      stance: "unreviewed",
+    },
+    {
+      id: randomUUID(),
+      title: "真正的边界可能在什么才算有效证据",
+      interpretation:
+        "当直觉、个案、数据和机制互相冲突时，你愿意让哪一种证据推翻原判断，比主义名称更能说明这次世界观倾向。",
+      evidence: [evidenceNode(phenomenology, "这句话显示什么线索最先进入了你的判断。")],
+      counterEvidence: [
+        evidenceNode(field, "这句话提醒我们，证据本身也可能受资源、位置和制度影响。"),
       ],
       stance: "unreviewed",
     },
   ];
 
   return {
-    coreTension: `你似乎既在保护“${extractCoreValue(ontology.content)}”，又在用“${session.marker}”审查自己的感受。`,
+    coreTension: orientationCopy.core,
     hypotheses,
     dimensions: [
       dimensionReading(session.messages, "field", 1),
@@ -430,16 +658,17 @@ export function buildSessionResult(session: MirrorSession, now = new Date()): Se
       dimensionReading(session.messages, "teleology", 4),
     ],
     uncertainties: [
-      "这些读法只绑定本次议题，还不能说明你在其他关系里也会如此。",
-      "目前仍无法确定，张力主要来自你的自我要求，还是来自一条确实被破坏的现实边界。",
+      "这些读法只绑定本次议题。换一个问题，你的因果起点可能完全不同。",
+      "强调个人责任不自动等于观念优先，看到资源限制也不自动等于物质优先。",
+      "同时提到观念和条件还不等于解释了机制，仍要说明它们怎样作用，以及哪一层先发生变化。",
     ],
     nextQuestion:
-      "下一次相似时刻出现时，先不要解释自己。只观察：你最先想维护的是规则、关系，还是不再被忽略的自己？",
+      "下一次形成判断时，先记下第一反应：你先看见了人的意图，还是选择发生之前的条件？再问一句，什么证据会让你换边？",
     window: {
       externalFactors: findExternalFactors(allText),
       question:
-        "如果暂时不把原因放在你身上，对方的选择、权力差或现实条件中，哪一项也应当承担解释？",
-      note: "这扇窗用于检查外部现实，避免把所有问题都内化成你的认知结构。",
+        "把解释放回现实：谁拥有资源、规则制定权和退出权，哪些成本不会因为换一种想法就消失？",
+      note: "这扇窗抵抗两种简化：把结构问题缩成个人心态，也把人的具体选择全部交给结构解释。",
     },
     durationSeconds: Math.max(
       1,
@@ -468,6 +697,7 @@ function safetyStopFromAnswer(
     ],
     riskFlags: [...new Set([...session.riskFlags, ...riskFlags])],
     safetyMessage,
+    suggestions: [],
     updatedAt: timestamp,
   };
 }
@@ -496,6 +726,7 @@ export function advanceLocalSession(
     ...session,
     stage: "questioning",
     messages: [...session.messages, makeMessage("user", answer, timestamp, currentDimension)],
+    suggestions: [],
     questionIndex: answeredCount,
     updatedAt: timestamp,
   };
@@ -525,6 +756,7 @@ export function advanceLocalSession(
       ...withAnswer.messages,
       makeMessage("mirror", nextQuestion.content, timestamp, nextQuestion.dimension),
     ],
+    suggestions: localAnswerSuggestionsFor(nextQuestionNumber, session.marker, withAnswer.messages),
   };
 }
 
@@ -565,32 +797,32 @@ export function updateHypothesisStance(
 
 const EXPERIMENT_COPY = {
   field: {
-    title: "移走一条默认规则",
-    label: "关系不再由唯一规则兜底",
-    signal: "暂时假设双方可以重新协商什么才算在乎，而不是先证明谁违背了标准。",
-    prompt: "如果“在乎就必须以某种固定方式证明”不再成立，同一件事里你还会坚持什么？",
-    observation: "只改变关系背景，其他感受与目标先保持原样。观察哪些愤怒仍然存在，哪些开始松动。",
+    title: "把背景变成原因",
+    label: "条件不再只是背景",
+    signal: "暂时把资源、身体、技术与制度放到个人选择之前，观察原判断是否仍然成立。",
+    prompt: "如果先改变条件，而不要求任何人改变想法，结果会怎样变化？",
+    observation: "只改变因果起点。责任判断与价值判断先保持原样，看看原来的解释还剩多少。",
   },
   ontology: {
-    title: "松动一个不可退让之物",
-    label: "核心之物暂时变成可协商",
-    signal: "暂时假设你最不能失去的东西并非只有一种实现形式。",
-    prompt: "如果你在意的东西仍可被保护，只是不必通过原来的方式证明，你会怎样重新描述这件事？",
-    observation: "只改变对真实核心的理解，不要求你放弃边界。观察替代形式是否真的存在。",
+    title: "换一种真实标准",
+    label: "区分物质事实与社会事实",
+    signal: "暂时把不依赖相信的事实，与依靠共同承认才成立的现实分开。",
+    prompt: "你在意的东西若无人承认仍会存在，还是必须依靠共同相信才能起作用？",
+    observation: "只改变什么算作真实。因果顺序先不动，观察原判断依赖的是哪一种存在。",
   },
   phenomenology: {
-    title: "让感受先于解释",
-    label: "经验暂时不接受评判",
-    signal: "让第一刻的身体感受和情绪先存在，不急着判断它是否成熟或合理。",
-    prompt: "如果最先出现的感受不需要立刻通过解释，它想让你注意到什么？",
-    observation: "只改变经验的组织方式，事实本身不变。观察你是否会听见此前被解释盖住的线索。",
+    title: "更换证据入口",
+    label: "让最强反例先进入判断",
+    signal: "暂时给一条最不符合原判断的证据同等权重，不急着保护原来的结论。",
+    prompt: "如果先看最强反例，再看支持材料，你还会用同一种方式解释这件事吗？",
+    observation: "只改变证据顺序。事实本身不变，观察你的确信来自证据，还是来自最先形成的框架。",
   },
   teleology: {
-    title: "换一个行动方向",
-    label: "行动不再负责维持旧循环",
-    signal: "暂时让下一步既不证明你是对的，也不负责阻止关系破裂。",
-    prompt: "如果下一步只负责清楚表达边界，而不负责控制结果，你会做出哪个最小动作？",
-    observation: "只改变行动指向，其他判断先不动。观察这会带来自由、恐惧，还是两者都有。",
+    title: "更换改变杠杆",
+    label: "先改变另一层变量",
+    signal: "如果原先想改变观念，就先改规则与激励；如果原先想改条件，就先改理解与意愿。",
+    prompt: "只换这一个变量，结果会通过什么具体机制发生变化？",
+    observation: "只改变干预位置。观察另一层是否真的会跟着改变，还是暴露出原解释缺少的一环。",
   },
 } as const satisfies Record<
   Dimension,

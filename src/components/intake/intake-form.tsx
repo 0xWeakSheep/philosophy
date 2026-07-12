@@ -11,12 +11,16 @@ const MAX_LENGTH = 2000;
 
 const examples = [
   {
-    short: "我明明生气，却总说没关系",
-    full: "对方临时取消约会后，我很生气，却告诉自己成熟的人不该计较。我最后说没关系，但之后会冷淡好几天。",
+    short: "努力与起点",
+    full: "两个人付出相近的努力，却因为起点和资源不同，得到完全不同的机会。我仍觉得人该为自己的选择负责，但把结果只归因于努力，也不诚实。",
   },
   {
-    short: "对方不回复，我就觉得自己不重要",
-    full: "当对方很久不回复时，我会立刻想到自己不重要。我通常不问，而是反复查看消息，最后先疏远对方。",
+    short: "AI 作品的价值",
+    full: "一幅作品确实让我受到触动，但得知它完全由 AI 生成后，我立刻觉得它少了什么。我不确定价值来自作品产生的效果，还是创作者的意图与经验。",
+  },
+  {
+    short: "规则相同就公平吗",
+    full: "一项规则得到多数人同意，也对所有人使用同一标准，但它持续让起点更低的人承担更多成本。我不确定它还能不能算公平。",
   },
 ] as const;
 
@@ -62,11 +66,11 @@ export function IntakeForm() {
 
     const normalizedInput = input.trim();
     if (normalizedInput.length < MIN_LENGTH) {
-      setError(`再多写一点具体经过吧，至少需要 ${MIN_LENGTH} 个字。`);
+      setError(`至少写 ${MIN_LENGTH} 个字。`);
       return;
     }
     if (!consented) {
-      setError("请先确认你理解这是一项非诊断的自我探索。");
+      setError("请先确认使用边界。");
       return;
     }
 
@@ -79,18 +83,18 @@ export function IntakeForm() {
       });
       const data = (await response.json().catch(() => ({}))) as ApiData;
       if (!response.ok) {
-        throw new Error(readApiError(data) ?? "暂时没能创建这次探索，请稍后再试。");
+        throw new Error(readApiError(data) ?? "暂时无法开始，请重试。");
       }
 
       const sessionId = readSessionId(data);
       if (!sessionId) {
-        throw new Error("已经收到你的文字，但没有拿到会话编号。请重试一次。");
+        throw new Error("会话创建失败，请重试。");
       }
 
       router.push(`/session/${encodeURIComponent(sessionId)}`);
     } catch (caught) {
       setPending(false);
-      setError(caught instanceof Error ? caught.message : "连接暂时中断，请检查网络后再试。");
+      setError(caught instanceof Error ? caught.message : "连接中断，请重试。");
     }
   }
 
@@ -99,10 +103,10 @@ export function IntakeForm() {
       <div className="flex items-end justify-between gap-4">
         <div className="space-y-2">
           <label className="block text-base font-semibold" htmlFor="intake">
-            发生了什么？
+            你的判断
           </label>
           <p className="max-w-xl text-sm leading-6 text-[var(--muted)]" id="intake-helper">
-            写清楚发生的事、最难受的地方，以及你通常会怎么做。不必分析自己。
+            写下判断和犹豫。不必先选唯心或唯物。
           </p>
         </div>
         <span
@@ -121,14 +125,14 @@ export function IntakeForm() {
         id="intake"
         maxLength={MAX_LENGTH}
         onChange={(event) => setInput(event.target.value)}
-        placeholder="例如：上周他又临时取消了约会。我很生气，却还是说没关系……"
-        rows={8}
+        placeholder="例如：我相信努力能改变处境，但相近的付出为何会得到不同结果……"
+        rows={6}
         value={input}
       />
 
       <div className="mt-5">
-        <p className="text-xs font-medium text-[var(--muted)]">不知道从哪里写，可以借一句开头</p>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <p className="text-xs font-medium text-[var(--muted)]">没有头绪？选一个再改</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {examples.map((example) => (
             <button
               className="example-prompt"
@@ -157,9 +161,7 @@ export function IntakeForm() {
           }}
           type="checkbox"
         />
-        <span>
-          我理解：这不是心理治疗、诊断或人格测评。接下来出现的读法只是临时假设，我可以随时反驳或退出。
-        </span>
+        <span>我理解：这不是人格测试，只描述这个问题里的解释顺序；我可以反驳、退出或删除。</span>
       </label>
 
       <div className="mt-5 min-h-7" id="intake-error">
@@ -179,14 +181,14 @@ export function IntakeForm() {
       <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 text-xs leading-5 text-[var(--muted)]">
           <LockSimpleIcon aria-hidden="true" size={15} weight="regular" />
-          本次内容默认私密，之后可以删除
+          私密 · 可删除
         </p>
         <button
           className="action-primary relative min-w-44 overflow-hidden"
           disabled={pending || normalizedLength > MAX_LENGTH}
           type="submit"
         >
-          {pending ? "正在准备第一问" : "开始显影"}
+          {pending ? "准备中" : "开始显影"}
           {pending ? null : <ArrowRightIcon aria-hidden="true" size={18} weight="regular" />}
           {pending ? <span aria-hidden="true" className="submit-progress" /> : null}
         </button>

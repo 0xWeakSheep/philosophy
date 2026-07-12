@@ -31,21 +31,20 @@ export function FeedbackPanel({ sessionId }: FeedbackPanelProps) {
 
   if (status === "saved") {
     return (
-      <section className="mt-24 border-t border-[var(--line)] py-14 text-center" aria-live="polite">
+      <section className="py-8 text-center" aria-live="polite">
         <Check className="mx-auto text-[var(--accent)]" aria-hidden="true" size={26} />
-        <p className="mt-4 font-serif text-2xl">这条反馈已经留下</p>
-        <p className="mt-2 text-sm text-[var(--muted)]">它只用于判断镜室有没有越过你的发现权。</p>
+        <p className="mt-3 font-serif text-2xl">已收到</p>
       </section>
     );
   }
 
   return (
-    <section aria-labelledby="feedback-title" className="mt-24 border-t border-[var(--line)] py-14">
+    <section aria-labelledby="feedback-title" className="py-8">
       <form onSubmit={submitFeedback} className="mx-auto max-w-3xl">
-        <h2 id="feedback-title" className="text-center font-serif text-3xl">
-          镜子有没有越界？
+        <h2 id="feedback-title" className="sr-only">
+          反馈
         </h2>
-        <div className="mt-10 grid gap-7 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <ChoiceQuestion
             label="它有没有帮你看见一点问题结构？"
             value={structureDiscovery}
@@ -57,8 +56,8 @@ export function FeedbackPanel({ sessionId }: FeedbackPanelProps) {
             onChange={setFeltLabeled}
           />
         </div>
-        <label htmlFor="feedback-note" className="mt-8 block text-sm font-medium">
-          还想告诉我们什么？可不填
+        <label htmlFor="feedback-note" className="mt-6 block text-sm font-medium">
+          补一句，可不填
         </label>
         <textarea
           id="feedback-note"
