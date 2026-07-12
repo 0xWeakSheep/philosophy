@@ -58,10 +58,29 @@ export interface DimensionSignal {
   observation?: string;
 }
 
+export interface KnowledgeCitation {
+  kind: "coordinate" | "lineage" | "framework";
+  title: string;
+  code?: string;
+  sourcePath: string;
+  excerpt: string;
+}
+
+export interface KnowledgeReading {
+  code: string;
+  title: string;
+  summary: string;
+  capabilities: string[];
+  blindSpots: string[];
+  prompts: string[];
+  sources: KnowledgeCitation[];
+}
+
 export interface SessionResult {
   coreTension: string;
   hypotheses: Hypothesis[];
   dimensions: DimensionSignal[];
+  knowledge?: KnowledgeReading;
   uncertainties: string[];
   nextQuestion: string;
   window: {

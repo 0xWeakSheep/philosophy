@@ -544,6 +544,127 @@ function PurposeProp({ value }: { value: WorldviewCharacterAxisValue }) {
   );
 }
 
+function LegVariant({
+  field,
+  teleology,
+}: {
+  field: WorldviewCharacterAxisValue;
+  teleology: WorldviewCharacterAxisValue;
+}) {
+  const legStyle = {
+    fill: "none",
+    stroke: "var(--ink)",
+    strokeLinecap: "round" as const,
+    strokeWidth: 20,
+  };
+  const shoeStyle = {
+    stroke: "var(--accent)",
+    strokeLinecap: "square" as const,
+    strokeWidth: 16,
+  };
+
+  if (field === 0) {
+    return (
+      <g>
+        <path d="M350 430L342 484" style={legStyle} />
+        <path d="M410 430L418 484" style={legStyle} />
+        <path d="M322 489H354" style={shoeStyle} />
+        <path d="M406 489H438" style={shoeStyle} />
+      </g>
+    );
+  }
+
+  if (field === 1) {
+    return (
+      <g>
+        <path d="M349 429Q324 454 308 483" style={legStyle} />
+        <path d="M413 429Q449 451 470 479" style={legStyle} />
+        <path d="M286 486H324" style={shoeStyle} />
+        <path d="M454 484H492" style={shoeStyle} />
+      </g>
+    );
+  }
+
+  if (field === 2) {
+    return (
+      <g>
+        <path d="M350 430Q369 454 362 487" style={legStyle} />
+        <path d="M410 430Q389 455 399 487" style={legStyle} />
+        <path d="M341 491H374" style={shoeStyle} />
+        <path d="M388 491H422" style={shoeStyle} />
+        <circle cx="380" cy={teleology === 2 ? 463 : 475} r="5" fill="var(--accent)" />
+      </g>
+    );
+  }
+
+  return (
+    <g>
+      <path d="M351 430Q320 448 286 466" style={legStyle} />
+      <path d="M409 430Q449 438 486 457" style={legStyle} />
+      <path d="M263 468H300" style={shoeStyle} />
+      <path d="M471 460H508" style={shoeStyle} />
+      <path
+        d="M311 471Q380 501 450 471"
+        fill="none"
+        stroke="var(--line-strong)"
+        strokeWidth="2"
+        strokeDasharray="5 8"
+      />
+    </g>
+  );
+}
+
+function BodyVariant({ values, gradientId }: { values: CharacterValues; gradientId: string }) {
+  const [field, ontology, phenomenology, teleology] = values;
+  const bodyPaths = [
+    "M324 307Q380 281 436 307L454 448Q380 472 306 448Z",
+    "M311 316Q381 274 449 316L432 456Q382 468 329 456Z",
+    "M333 300Q380 271 427 300L468 435Q381 484 292 435Z",
+    "M305 326Q380 282 455 326L485 439Q380 459 275 439Z",
+  ] as const;
+  const seamPaths = [
+    "M323 308L380 352L437 308M380 352V451",
+    "M314 318L375 342L448 318M375 342L362 454",
+    "M334 302Q380 341 426 302M380 342V458M315 418Q380 446 445 418",
+    "M304 329Q380 359 456 329M351 346L330 443M408 346L432 443",
+  ] as const;
+  const collarPaths = [
+    "M335 295Q380 319 425 295L418 319Q380 338 342 319Z",
+    "M329 302L380 329L432 302L421 333Q380 349 339 333Z",
+    "M344 291Q380 315 416 291L432 314Q380 350 328 314Z",
+    "M319 309L380 289L441 309L421 329Q380 317 339 329Z",
+  ] as const;
+  const symbolX = 330 + ontology * 32;
+  const symbolY = 413 - phenomenology * 11;
+
+  return (
+    <g>
+      <path d={bodyPaths[field]} fill={`url(#${gradientId})`} stroke="var(--ink)" strokeWidth="4" />
+      <path d={seamPaths[teleology]} fill="none" stroke="var(--line-strong)" strokeWidth="3" />
+      <path d={collarPaths[ontology]} fill="var(--accent)" stroke="var(--ink)" strokeWidth="3" />
+      <g opacity={0.75}>
+        <rect
+          x={symbolX}
+          y={symbolY}
+          width={18 + field * 4}
+          height={18 + teleology * 3}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="2"
+        />
+        <path
+          d={`M${symbolX + 5} ${symbolY + 14}Q${symbolX + 14 + phenomenology * 2} ${
+            symbolY - 3
+          } ${symbolX + 25 + field * 2} ${symbolY + 14}`}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="2"
+        />
+      </g>
+    </g>
+  );
+}
+
 function ChestSigil({ values }: { values: CharacterValues }) {
   const [field, ontology, phenomenology, teleology] = values;
   const lobes = 3 + field;
@@ -733,34 +854,11 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
         <ellipse cx="380" cy="486" rx="116" ry="17" fill="var(--ink)" opacity="0.1" />
 
         <g className="worldview-character__float">
-          <g>
-            <path d="M351 431L342 484" stroke="var(--ink)" strokeWidth="20" strokeLinecap="round" />
-            <path d="M409 431L418 484" stroke="var(--ink)" strokeWidth="20" strokeLinecap="round" />
-            <path d="M322 489H354" stroke="var(--accent)" strokeWidth="16" strokeLinecap="square" />
-            <path d="M406 489H438" stroke="var(--accent)" strokeWidth="16" strokeLinecap="square" />
-          </g>
+          <LegVariant field={values[0]} teleology={values[3]} />
 
           <PurposeArms value={values[3]} />
 
-          <path
-            d="M324 307Q380 281 436 307L454 448Q380 472 306 448Z"
-            fill={`url(#${coatGradientId})`}
-            stroke="var(--ink)"
-            strokeWidth="4"
-          />
-          <path
-            d="M323 308L380 352L437 308M380 352V451"
-            fill="none"
-            stroke="var(--line-strong)"
-            strokeWidth="3"
-          />
-          <path
-            d="M335 295Q380 319 425 295L418 319Q380 338 342 319Z"
-            fill="var(--accent)"
-            stroke="var(--ink)"
-            strokeWidth="3"
-          />
-
+          <BodyVariant values={values} gradientId={coatGradientId} />
           <ChestSigil values={values} />
           <PurposeProp value={values[3]} />
           <HeadVariant value={values[1]} />

@@ -201,6 +201,43 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
             </div>
           </ResultDetails>
 
+          {result.knowledge ? (
+            <ResultDetails title="知识库命中" hint={result.knowledge.code}>
+              <div className="grid gap-7 py-8 lg:grid-cols-[0.78fr_1.22fr]">
+                <div>
+                  <p className="coordinate-type text-3xl text-[var(--accent)]">
+                    {result.knowledge.code}
+                  </p>
+                  <h2 className="mt-2 font-serif text-2xl">{result.knowledge.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+                    {result.knowledge.summary}
+                  </p>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <KnowledgeList title="可能能力" items={result.knowledge.capabilities} />
+                  <KnowledgeList title="典型盲区" items={result.knowledge.blindSpots} />
+                  <div className="sm:col-span-2">
+                    <p className="font-mono text-[10px] tracking-[0.12em] text-[var(--muted)]">
+                      SOURCES
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {result.knowledge.sources.slice(0, 4).map((source) => (
+                        <p
+                          key={`${source.kind}-${source.sourcePath}`}
+                          className="border-l border-[var(--line-strong)] pl-3 text-xs leading-5 text-[var(--muted)]"
+                        >
+                          <span className="text-[var(--ink)]">{source.title}</span>
+                          <br />
+                          {source.sourcePath}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ResultDetails>
+          ) : null}
+
           <ResultDetails title="给镜室反馈" hint="可选">
             <FeedbackPanel sessionId={session.id} />
           </ResultDetails>
@@ -213,6 +250,21 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
         </footer>
       </div>
     </main>
+  );
+}
+
+function KnowledgeList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <p className="font-mono text-[10px] tracking-[0.12em] text-[var(--muted)]">{title}</p>
+      <div className="mt-3 grid gap-2">
+        {items.slice(0, 3).map((item) => (
+          <p key={item} className="border-l border-[var(--accent)] pl-3 text-sm leading-6">
+            {item}
+          </p>
+        ))}
+      </div>
+    </div>
   );
 }
 
