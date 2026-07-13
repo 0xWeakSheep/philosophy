@@ -8,6 +8,8 @@ export interface PracticalResultSummaryProps {
   readonly nameExplanation: string;
   readonly verificationQuestion: string;
   readonly scopeNote: string;
+  readonly showCapabilityLists?: boolean;
+  readonly showVerification?: boolean;
 }
 
 interface ReadingListProps {
@@ -48,6 +50,8 @@ export function PracticalResultSummary({
   nameExplanation,
   verificationQuestion,
   scopeNote,
+  showCapabilityLists = true,
+  showVerification = true,
 }: PracticalResultSummaryProps) {
   return (
     <section
@@ -109,36 +113,40 @@ export function PracticalResultSummary({
         </aside>
       </div>
 
-      <div className="grid border-t border-[var(--line)] px-5 sm:grid-cols-2 sm:px-7 lg:px-10">
-        <div className="py-7 sm:pr-8 lg:py-9 lg:pr-12">
-          <ReadingList
-            id="practical-result-strengths"
-            title="你可能带来的价值"
-            description="这套思路在现实协作中比较有力量的部分。"
-            items={strengths}
-          />
+      {showCapabilityLists ? (
+        <div className="grid border-t border-[var(--line)] px-5 sm:grid-cols-2 sm:px-7 lg:px-10">
+          <div className="py-7 sm:pr-8 lg:py-9 lg:pr-12">
+            <ReadingList
+              id="practical-result-strengths"
+              title="你可能带来的价值"
+              description="这套思路在现实协作中比较有力量的部分。"
+              items={strengths}
+            />
+          </div>
+          <div className="border-t border-[var(--line)] py-7 sm:border-t-0 sm:border-l sm:pl-8 lg:py-9 lg:pl-12">
+            <ReadingList
+              id="practical-result-blind-spots"
+              title="你需要警惕的代价"
+              description="当这套思路走得太远，最容易忽略的部分。"
+              items={blindSpots}
+            />
+          </div>
         </div>
-        <div className="border-t border-[var(--line)] py-7 sm:border-t-0 sm:border-l sm:pl-8 lg:py-9 lg:pl-12">
-          <ReadingList
-            id="practical-result-blind-spots"
-            title="你需要警惕的代价"
-            description="当这套思路走得太远，最容易忽略的部分。"
-            items={blindSpots}
-          />
-        </div>
-      </div>
+      ) : null}
 
-      <footer className="border-t border-[var(--line-strong)] bg-[var(--surface)] px-5 py-6 sm:px-7 lg:px-10 lg:py-7">
-        <div className="grid gap-3 lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-8">
-          <h2 className="text-sm font-medium text-[var(--accent)]">拿一个真实场景验证它</h2>
-          <p className="max-w-4xl font-serif text-xl leading-[1.55] sm:text-2xl">
-            {verificationQuestion}
+      {showVerification ? (
+        <footer className="border-t border-[var(--line-strong)] bg-[var(--surface)] px-5 py-6 sm:px-7 lg:px-10 lg:py-7">
+          <div className="grid gap-3 lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-8">
+            <h2 className="text-sm font-medium text-[var(--accent)]">拿一个真实场景验证它</h2>
+            <p className="max-w-4xl font-serif text-xl leading-[1.55] sm:text-2xl">
+              {verificationQuestion}
+            </p>
+          </div>
+          <p className="mt-5 max-w-4xl border-l border-[var(--line-strong)] pl-3 text-xs leading-5 text-[var(--muted)]">
+            {scopeNote}
           </p>
-        </div>
-        <p className="mt-5 max-w-4xl border-l border-[var(--line-strong)] pl-3 text-xs leading-5 text-[var(--muted)]">
-          {scopeNote}
-        </p>
-      </footer>
+        </footer>
+      ) : null}
     </section>
   );
 }

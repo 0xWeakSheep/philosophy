@@ -96,6 +96,47 @@ export interface LayeredReading {
   observableExpression: InterpretationLayer;
 }
 
+export interface GrowthTrouble {
+  title: string;
+  trigger: string;
+  feltExperience: string;
+  concreteExample: string;
+  hiddenCost: string;
+}
+
+export interface GrowthStrength {
+  title: string;
+  bestUse: string;
+  concreteExample: string;
+}
+
+export interface GrowthStep {
+  instruction: string;
+  concreteExample: string;
+  completionSignal: string;
+}
+
+export interface AdjacentGrowthMove {
+  focusDimension: DimensionKey;
+  focusLabel: string;
+  from: string;
+  to: string;
+  targetCode: string;
+  targetName: string;
+  moveName: string;
+  roleShift: string;
+  rationale: string;
+  tradeoff: string;
+  steps: readonly [GrowthStep, GrowthStep, GrowthStep];
+}
+
+export interface GrowthProfile {
+  troubles: GrowthTrouble[];
+  strengths: GrowthStrength[];
+  adjacentMove: AdjacentGrowthMove;
+  scopeNote: string;
+}
+
 export interface BreakthroughAction {
   kind: "observe" | "test" | "revise";
   title: string;
@@ -146,6 +187,7 @@ export interface SessionResult {
   knowledge?: KnowledgeReading;
   practicalProfile?: PracticalProfile;
   layeredReading?: LayeredReading;
+  growthProfile?: GrowthProfile;
   breakthrough?: BreakthroughClosure;
   uncertainties: string[];
   nextQuestion: string;

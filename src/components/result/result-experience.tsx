@@ -11,6 +11,7 @@ import { createWorldviewProfile } from "@/lib/worldview-profile";
 import { BreakthroughPlan } from "./breakthrough-plan";
 import { CounterfactualLab } from "./counterfactual-lab";
 import { FeedbackPanel } from "./feedback-panel";
+import { GrowthTransitionReadingPanel } from "./growth-transition-reading";
 import { HypothesisReview } from "./hypothesis-review";
 import { LayeredResultReading } from "./layered-result-reading";
 import { PracticalResultSummary } from "./practical-result-summary";
@@ -190,6 +191,8 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
             nameExplanation={practicalProfile.nameExplanation}
             verificationQuestion={practicalProfile.verificationQuestion}
             scopeNote={profile.scopeNote}
+            showCapabilityLists={!result.growthProfile}
+            showVerification={!result.growthProfile}
           />
         </section>
 
@@ -212,7 +215,14 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
           <WorldviewCube profile={visualProfile} />
         </section>
 
-        {result.breakthrough ? (
+        {result.growthProfile ? (
+          <GrowthTransitionReadingPanel
+            frictionPoints={result.growthProfile.troubles}
+            strengths={result.growthProfile.strengths}
+            transition={result.growthProfile.adjacentMove}
+            scopeNote={result.growthProfile.scopeNote}
+          />
+        ) : result.breakthrough ? (
           <BreakthroughPlan breakthrough={result.breakthrough} />
         ) : (
           <div className="border-y border-[var(--line)] py-5">

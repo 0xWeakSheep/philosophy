@@ -31,4 +31,19 @@ describe("PracticalResultSummary", () => {
     expect(markup).toContain("这个名字是什么意思");
     expect(markup).toContain("你可能带来的价值");
   });
+
+  it("can defer strengths and trouble costs to the structured growth section", () => {
+    const markup = renderToStaticMarkup(
+      <PracticalResultSummary
+        {...baseProps}
+        showCapabilityLists={false}
+        showVerification={false}
+      />,
+    );
+
+    expect(markup).not.toContain("你可能带来的价值");
+    expect(markup).not.toContain("你需要警惕的代价");
+    expect(markup).not.toContain("拿一个真实场景验证它");
+    expect(markup).toContain("这个名字是什么意思");
+  });
 });
