@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { type CSSProperties, useId } from "react";
 
 export type WorldviewCharacterAxisValue = 0 | 1 | 2 | 3;
 
@@ -34,6 +34,14 @@ type CharacterValues = readonly [
   WorldviewCharacterAxisValue,
 ];
 
+interface CharacterPalette {
+  readonly accent: string;
+  readonly soft: string;
+  readonly coat: string;
+  readonly lens: string;
+  readonly name: string;
+}
+
 const CHARACTER_AXIS_ORDER = [
   "field",
   "ontology",
@@ -56,6 +64,37 @@ const CHARACTER_VARIANT_NAMES = {
 } as const satisfies Record<CharacterAxisKey, readonly [string, string, string, string]>;
 
 const SIGIL_SLOTS = [0, 1, 2, 3] as const;
+
+const CHARACTER_PALETTES = [
+  [
+    { name: "砖红档案", accent: "#d76f61", soft: "#d76f6126", coat: "#2c2221", lens: "#322726" },
+    { name: "赤陶锋面", accent: "#c95f70", soft: "#c95f7026", coat: "#2c2025", lens: "#34242a" },
+    { name: "暖铜灯室", accent: "#d7864d", soft: "#d7864d26", coat: "#2d251e", lens: "#35291f" },
+    { name: "珊瑚新页", accent: "#dc665c", soft: "#dc665c26", coat: "#2e211f", lens: "#362522" },
+  ],
+  [
+    { name: "赭石警戒", accent: "#c99b4c", soft: "#c99b4c26", coat: "#2b271d", lens: "#332d20" },
+    { name: "琥珀裂光", accent: "#d48a3f", soft: "#d48a3f26", coat: "#2e241b", lens: "#37291d" },
+    { name: "苔金回路", accent: "#a9a855", soft: "#a9a85526", coat: "#28291f", lens: "#303124" },
+    { name: "橙焰出口", accent: "#d97745", soft: "#d9774526", coat: "#30221b", lens: "#39271d" },
+  ],
+  [
+    { name: "青瓷定标", accent: "#54a398", soft: "#54a39826", coat: "#1d2928", lens: "#213230" },
+    { name: "潮蓝折面", accent: "#5496aa", soft: "#5496aa26", coat: "#1d282d", lens: "#223139" },
+    { name: "群青内核", accent: "#6b83bf", soft: "#6b83bf26", coat: "#202532", lens: "#252c3c" },
+    { name: "松绿生长", accent: "#499d7e", soft: "#499d7e26", coat: "#1c2924", lens: "#20332b" },
+  ],
+  [
+    { name: "暮紫观测", accent: "#8c78bf", soft: "#8c78bf26", coat: "#272232", lens: "#2d273b" },
+    { name: "梅色岔路", accent: "#a16d9b", soft: "#a16d9b26", coat: "#2c222d", lens: "#352738" },
+    { name: "雾蓝远行", accent: "#778bc3", soft: "#778bc326", coat: "#222733", lens: "#282e3e" },
+    { name: "莓红星图", accent: "#b36e7f", soft: "#b36e7f26", coat: "#302329", lens: "#392831" },
+  ],
+] as const satisfies readonly (readonly CharacterPalette[])[];
+
+function characterPalette(values: CharacterValues): CharacterPalette {
+  return CHARACTER_PALETTES[values[0]]?.[values[3]] ?? CHARACTER_PALETTES[0][0];
+}
 
 function clampValue(value: number | undefined): WorldviewCharacterAxisValue {
   return Math.min(3, Math.max(0, Math.round(value ?? 0))) as WorldviewCharacterAxisValue;
@@ -295,105 +334,134 @@ function HeadVariant({ value }: { value: WorldviewCharacterAxisValue }) {
   );
 }
 
-function ExpressionVariant({ value }: { value: WorldviewCharacterAxisValue }) {
-  if (value === 0) {
-    return (
-      <g>
-        <g fill="var(--surface)" stroke="var(--ink)" strokeWidth="3">
-          <rect x="337" y="203" width="38" height="29" rx="8" />
-          <rect x="385" y="203" width="38" height="29" rx="8" />
-          <path d="M375 213H385" />
-        </g>
-        <g className="worldview-character__blink" fill="var(--ink)">
-          <circle cx="357" cy="217" r="4" />
-          <circle cx="404" cy="217" r="4" />
-        </g>
-        <path
-          d="M364 251C374 256 386 256 397 251"
-          fill="none"
-          stroke="var(--ink)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-      </g>
-    );
-  }
-
-  if (value === 1) {
-    return (
-      <g>
-        <g fill="var(--accent-soft)" stroke="var(--ink)" strokeWidth="3">
-          <circle cx="354" cy="217" r="18" />
-          <circle cx="407" cy="217" r="18" />
-          <path d="M372 213C377 209 382 209 389 213" fill="none" />
-        </g>
-        <g className="worldview-character__blink" fill="var(--ink)">
-          <circle cx="359" cy="218" r="4" />
-          <circle cx="402" cy="218" r="4" />
-        </g>
-        <path
-          d="M337 191L364 187M393 188L421 194"
-          stroke="var(--ink)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M370 249C378 242 389 244 394 254C385 258 376 257 370 249Z"
-          fill="var(--accent)"
-          stroke="var(--ink)"
-          strokeWidth="2"
-        />
-      </g>
-    );
-  }
-
-  if (value === 2) {
-    return (
-      <g>
-        <circle
-          cx="354"
-          cy="214"
-          r="25"
-          fill="var(--surface)"
-          stroke="var(--accent)"
-          strokeWidth="4"
-        />
-        <path d="M336 232L322 260" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" />
-        <g className="worldview-character__blink" fill="var(--ink)">
-          <circle cx="354" cy="214" r="5" />
-          <path d="M394 216Q407 206 420 216Q407 224 394 216Z" />
-        </g>
-        <path d="M393 190L421 187" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
-        <path d="M369 252H397" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" />
-      </g>
-    );
-  }
+function ExpressionVariant({ values }: { values: CharacterValues }) {
+  const [field, ontology, phenomenology, teleology] = values;
+  const pupilOffset = ontology * 2 - 3;
+  const browPaths = [
+    "M337 192L366 192M394 192L423 192",
+    "M337 196L365 187M395 187L423 196",
+    "M337 187L365 194M395 194L423 187",
+    "M337 194Q351 181 366 192M394 192Q409 181 423 194",
+  ] as const;
+  const nosePaths = [
+    "M380 221V238",
+    "M375 236L383 224L389 237",
+    "M375 232Q380 238 386 232",
+    "M377 228L384 236",
+  ] as const;
+  const mouthPaths = [
+    "M365 251Q380 256 396 251",
+    "M367 249L380 243L395 252L381 259Z",
+    "M367 253Q380 246 396 253",
+    "M363 247Q380 266 399 247Q382 258 363 247Z",
+  ] as const;
 
   return (
     <g>
-      <g
-        className="worldview-character__blink"
+      <path
+        d={browPaths[field]}
         fill="none"
         stroke="var(--ink)"
-        strokeWidth="4"
         strokeLinecap="round"
-      >
-        <path d="M340 216Q354 204 368 216" />
-        <path d="M392 216Q406 204 420 216" />
-      </g>
-      <path
-        d="M365 246Q380 263 397 246"
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="4"
-        strokeLinecap="round"
+        strokeWidth={field === 3 ? 3 : 4}
       />
-      <g fill="var(--accent)">
-        <circle cx="338" cy="239" r="2.5" />
-        <circle cx="347" cy="242" r="2.5" />
-        <circle cx="414" cy="239" r="2.5" />
-        <circle cx="423" cy="242" r="2.5" />
-      </g>
+
+      {phenomenology === 0 ? (
+        <g>
+          <g fill="var(--surface)" stroke="var(--ink)" strokeWidth="3">
+            <rect x="337" y="202" width="38" height="30" rx={ontology === 0 ? 6 : 11} />
+            <rect x="385" y="202" width="38" height="30" rx={ontology === 0 ? 6 : 11} />
+            <path d="M375 213H385" />
+          </g>
+          <g className="worldview-character__blink" fill="var(--ink)">
+            <circle cx={357 + pupilOffset} cy="217" r="4" />
+            <circle cx={404 + pupilOffset} cy="217" r="4" />
+          </g>
+        </g>
+      ) : null}
+
+      {phenomenology === 1 ? (
+        <g>
+          <g fill="var(--accent-soft)" stroke="var(--ink)" strokeWidth="3">
+            <circle cx="354" cy="217" r="18" />
+            <circle cx="407" cy="217" r="18" />
+            <path d="M372 213C377 209 382 209 389 213" fill="none" />
+          </g>
+          <g className="worldview-character__blink" fill="var(--ink)">
+            <circle cx={354 + pupilOffset} cy="218" r={ontology === 2 ? 5 : 4} />
+            <circle cx={407 - pupilOffset} cy="218" r={ontology === 2 ? 5 : 4} />
+          </g>
+        </g>
+      ) : null}
+
+      {phenomenology === 2 ? (
+        <g>
+          <circle
+            cx="354"
+            cy="214"
+            r="25"
+            fill="var(--surface)"
+            stroke="var(--accent)"
+            strokeWidth="4"
+          />
+          <path d="M336 232L322 260" stroke="var(--accent)" strokeLinecap="round" strokeWidth="5" />
+          <g className="worldview-character__blink" fill="var(--ink)">
+            <circle cx={354 + pupilOffset} cy="214" r="5" />
+            <path d="M394 216Q407 206 420 216Q407 224 394 216Z" />
+          </g>
+        </g>
+      ) : null}
+
+      {phenomenology === 3 ? (
+        <g
+          className="worldview-character__blink"
+          fill="none"
+          stroke="var(--ink)"
+          strokeLinecap="round"
+          strokeWidth="4"
+        >
+          <path d={ontology % 2 === 0 ? "M340 216Q354 204 368 216" : "M340 212Q354 222 368 212"} />
+          <path d={ontology < 2 ? "M392 216Q406 204 420 216" : "M392 212Q406 222 420 212"} />
+        </g>
+      ) : null}
+
+      <path
+        d={nosePaths[ontology]}
+        fill="none"
+        stroke="var(--line-strong)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d={mouthPaths[teleology]}
+        fill={teleology === 1 || teleology === 3 ? "var(--accent)" : "none"}
+        stroke="var(--ink)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="3"
+      />
+
+      {field === 0 ? (
+        <path d="M340 241H351M410 241H421" stroke="var(--accent)" strokeWidth="2" />
+      ) : null}
+      {field === 1 ? (
+        <g fill="var(--accent)">
+          <path d="M338 238L344 246L350 238Z" />
+          <path d="M411 238L417 246L423 238Z" />
+        </g>
+      ) : null}
+      {field === 2 ? (
+        <circle cx={ontology < 2 ? 344 : 417} cy="243" r="4" fill="var(--accent)" />
+      ) : null}
+      {field === 3 ? (
+        <g fill="var(--accent)">
+          <circle cx="338" cy="239" r="2.5" />
+          <circle cx="347" cy="242" r="2.5" />
+          <circle cx="414" cy="239" r="2.5" />
+          <circle cx="423" cy="242" r="2.5" />
+        </g>
+      ) : null}
     </g>
   );
 }
@@ -713,6 +781,13 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
     findAxisValue(profile, "phenomenology", 2),
     findAxisValue(profile, "teleology", 3),
   ];
+  const palette = characterPalette(values);
+  const paletteStyle = {
+    "--accent": palette.accent,
+    "--accent-soft": palette.soft,
+    "--surface-solid": palette.coat,
+    "--surface": palette.lens,
+  } as CSSProperties;
 
   const variantDescriptions = CHARACTER_AXIS_ORDER.map((key, axisIndex) => {
     const axis = profile.axes.find((candidate) => candidate.key === key) ?? profile.axes[axisIndex];
@@ -727,6 +802,8 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
       className={`relative isolate w-full overflow-hidden bg-[var(--paper-deep)] ${
         embedded ? "" : "border border-[var(--line-strong)]"
       }`}
+      data-character-palette={palette.name}
+      style={paletteStyle}
     >
       <svg
         viewBox={embedded ? "104 92 552 468" : "0 0 760 560"}
@@ -862,7 +939,7 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
           <ChestSigil values={values} />
           <PurposeProp value={values[3]} />
           <HeadVariant value={values[1]} />
-          <ExpressionVariant value={values[2]} />
+          <ExpressionVariant values={values} />
         </g>
 
         {embedded ? null : (

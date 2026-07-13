@@ -426,7 +426,7 @@ a {
 
 .intake-textarea {
   width: 100%;
-  min-height: 17rem;
+  min-height: 13.5rem;
   resize: vertical;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
@@ -533,7 +533,7 @@ a {
   }
 
   .intake-textarea {
-    min-height: 14rem;
+    min-height: 12rem;
     font-size: 1rem;
   }
 }

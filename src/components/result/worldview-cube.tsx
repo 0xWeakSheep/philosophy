@@ -293,19 +293,19 @@ export function WorldviewCube({ profile }: WorldviewCubeProps) {
     >
       <div className="pointer-events-none absolute inset-y-0 left-0 w-px bg-[var(--accent)]" />
 
-      <header className="grid gap-6 border-b border-[var(--line)] p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-end lg:p-9">
+      <header className="grid gap-5 border-b border-[var(--line)] p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-end lg:px-8 lg:py-7">
         <div>
           <p className="font-mono text-[11px] tracking-[0.12em] text-[var(--accent)]">
             {profile.archetypeFamily} · 本题思想角色
           </p>
           <h1
             id={`${titleId}-card-title`}
-            className="display-type mt-3 max-w-3xl text-3xl sm:text-5xl"
+            className="display-type mt-2 max-w-3xl text-3xl sm:text-4xl"
           >
             {profile.archetypeTitle}
           </h1>
-          <p className="mt-3 font-serif text-lg text-[var(--accent)]">{profile.name}</p>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)] sm:text-base">
+          <p className="mt-2 font-serif text-lg text-[var(--accent)]">{profile.name}</p>
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {profile.archetypeLine}
           </p>
         </div>
@@ -317,8 +317,8 @@ export function WorldviewCube({ profile }: WorldviewCubeProps) {
         </div>
       </header>
 
-      <div className="grid lg:grid-cols-[minmax(0,1.36fr)_minmax(18rem,0.64fr)]">
-        <div className="border-b border-[var(--line)] p-3 sm:p-6 lg:border-r lg:border-b-0 lg:p-8">
+      <div className="grid lg:grid-cols-[minmax(0,1.16fr)_minmax(19rem,0.84fr)]">
+        <div className="border-b border-[var(--line)] p-3 sm:p-5 lg:border-r lg:border-b-0 lg:px-7 lg:py-5">
           <div className="mx-auto mb-3 flex max-w-[44rem] items-center justify-between gap-3 border-b border-[var(--line)]">
             <p className="font-mono text-[10px] tracking-[0.1em] text-[var(--muted)]">
               {visualMode === "character" ? "四轴共同塑造角色" : "四维坐标结构"}
@@ -343,7 +343,7 @@ export function WorldviewCube({ profile }: WorldviewCubeProps) {
             {visualMode === "character" ? (
               <motion.div
                 key="character"
-                className="mx-auto max-w-[34rem]"
+                className="mx-auto aspect-[552/468] w-full max-w-[26rem] overflow-hidden"
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -6 }}
@@ -624,7 +624,7 @@ export function WorldviewCube({ profile }: WorldviewCubeProps) {
 
           <section
             id={`${titleId}-axis-panel`}
-            className="mt-5 min-h-28 border-l-2 border-[var(--accent)] bg-[var(--surface)] px-4 py-4 lg:mt-auto"
+            className="mt-5 min-h-28 border-l-2 border-[var(--accent)] bg-[var(--surface)] px-4 py-4 lg:mt-8"
             aria-label="当前维度解释"
             aria-live="polite"
           >
