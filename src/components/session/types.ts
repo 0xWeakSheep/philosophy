@@ -23,6 +23,7 @@ export interface SessionMessage {
   id: string;
   role: "user" | "assistant" | "mirror";
   content: string;
+  example?: string;
   dimension?: DimensionKey;
 }
 
@@ -31,7 +32,12 @@ export type AnswerSuggestionLens = "agency" | "conditions" | "integrated" | "unc
 export interface AnswerSuggestion {
   id: string;
   content: string;
+  example?: string;
   lens?: AnswerSuggestionLens;
+}
+
+export function suggestionAnswerText(suggestion: AnswerSuggestion): string {
+  return suggestion.example ? `${suggestion.content}\n${suggestion.example}` : suggestion.content;
 }
 
 export interface EvidenceItem {
@@ -179,13 +185,27 @@ export function unwrapAnswerSuggestions(payload: unknown): AnswerSuggestionsPayl
     throw new Error("候选回答不完整");
   }
 
-  const suggestions = object.suggestions.filter(
-    (suggestion): suggestion is AnswerSuggestion =>
-      typeof suggestion === "object" &&
-      suggestion !== null &&
-      typeof (suggestion as Record<string, unknown>).id === "string" &&
-      typeof (suggestion as Record<string, unknown>).content === "string",
-  );
+  const suggestions = object.suggestions
+    .filter(
+      (suggestion): suggestion is Record<string, unknown> =>
+        typeof suggestion === "object" &&
+        suggestion !== null &&
+        typeof (suggestion as Record<string, unknown>).id === "string" &&
+        typeof (suggestion as Record<string, unknown>).content === "string",
+    )
+    .map(
+      (suggestion): AnswerSuggestion => ({
+        id: suggestion.id as string,
+        content: suggestion.content as string,
+        ...(typeof suggestion.example === "string" ? { example: suggestion.example } : {}),
+        ...(suggestion.lens === "agency" ||
+        suggestion.lens === "conditions" ||
+        suggestion.lens === "integrated" ||
+        suggestion.lens === "uncertain"
+          ? { lens: suggestion.lens }
+          : {}),
+      }),
+    );
 
   if (suggestions.length === 0) {
     throw new Error("候选回答暂时不可用");

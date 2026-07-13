@@ -9,7 +9,7 @@ import { AnswerSuggestions } from "./answer-suggestions";
 import { MirrorChamber } from "./mirror-chamber";
 import { ThoughtPortrait } from "./thought-portrait";
 import type { AnswerSuggestion, MirrorSession, SessionMessage } from "./types";
-import { unwrapAnswerSuggestions, unwrapSession } from "./types";
+import { suggestionAnswerText, unwrapAnswerSuggestions, unwrapSession } from "./types";
 
 interface SessionExperienceProps {
   sessionId: string;
@@ -136,8 +136,9 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
   );
 
   function selectSuggestion(suggestion: AnswerSuggestion) {
-    answerRef.current = suggestion.content;
-    setAnswer(suggestion.content);
+    const content = suggestionAnswerText(suggestion);
+    answerRef.current = content;
+    setAnswer(content);
     setSelectedSuggestionId(suggestion.id);
     setError("");
   }
@@ -146,7 +147,7 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
     answerRef.current = content;
     setAnswer(content);
     setSelectedSuggestionId(
-      suggestions.find((suggestion) => suggestion.content === content)?.id ?? null,
+      suggestions.find((suggestion) => suggestionAnswerText(suggestion) === content)?.id ?? null,
     );
     if (error) setError("");
   }
@@ -349,11 +350,11 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
             aria-labelledby="current-question"
           >
             {userMessage ? (
-              <div className="mb-2 flex max-w-3xl items-start gap-3 border-l border-[var(--line)] pl-3">
+              <div className="mb-1 flex max-w-3xl items-center gap-2.5 border-l border-[var(--line)] pl-3">
                 <span className="shrink-0 font-mono text-[0.65rem] tracking-[0.12em] text-[var(--muted)]">
                   上一句
                 </span>
-                <blockquote className="line-clamp-2 text-xs leading-relaxed text-[var(--muted)] sm:text-sm">
+                <blockquote className="line-clamp-1 text-xs leading-relaxed text-[var(--muted)]">
                   {highlightedText(userMessage.content, session.marker)}
                 </blockquote>
               </div>
@@ -375,10 +376,20 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
                 </div>
                 <h1
                   id="current-question"
-                  className="question-type mt-1.5 max-w-3xl text-[clamp(1.65rem,2.2vw,2.25rem)]"
+                  className="question-type mt-1 max-w-3xl text-[clamp(1.5rem,2vw,2.1rem)]"
                 >
                   {assistantMessage?.content ?? "你愿意先停在哪一句话上？"}
                 </h1>
+                {assistantMessage?.example ? (
+                  <div className="mt-2.5 flex max-w-3xl items-start gap-3 border-l-2 border-[var(--accent)] bg-[var(--surface)] px-3 py-2">
+                    <span className="shrink-0 pt-0.5 font-mono text-[0.62rem] tracking-[0.13em] text-[var(--accent)]">
+                      放到现实里
+                    </span>
+                    <p className="text-[0.82rem] leading-[1.55] text-[var(--muted)]">
+                      {assistantMessage.example}
+                    </p>
+                  </div>
+                ) : null}
               </motion.div>
             </AnimatePresence>
 
@@ -406,7 +417,7 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
                 disabled={submitting}
                 rows={2}
                 maxLength={1800}
-                className="mt-2 min-h-[4.5rem] w-full resize-y border border-[var(--line)] bg-transparent px-3.5 py-2.5 font-serif text-[0.95rem] leading-[1.5] tracking-[-0.01em] text-[var(--ink)] outline-none transition-colors duration-200 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 disabled:opacity-60"
+                className="mt-2 min-h-16 w-full resize-y border border-[var(--line)] bg-transparent px-3.5 py-2 font-serif text-[0.95rem] leading-[1.5] tracking-[-0.01em] text-[var(--ink)] outline-none transition-colors duration-200 placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 disabled:opacity-60"
                 placeholder="可改写已选答案，或自己写。"
                 aria-describedby={error ? "answer-help answer-error" : "answer-help"}
               />
