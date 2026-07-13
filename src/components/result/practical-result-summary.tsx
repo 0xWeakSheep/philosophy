@@ -2,7 +2,7 @@ export interface PracticalResultSummaryProps {
   readonly canonicalName: string;
   readonly code: string;
   readonly plainSummary: string;
-  readonly teamScenario: string;
+  readonly teamScenario?: string;
   readonly strengths: readonly string[];
   readonly blindSpots: readonly string[];
   readonly nameExplanation: string;
@@ -83,15 +83,27 @@ export function PracticalResultSummary({
         </div>
       </header>
 
-      <div className="grid border-t border-[var(--line)] lg:grid-cols-[minmax(0,1.28fr)_minmax(18rem,0.72fr)]">
-        <article className="relative bg-[var(--accent-soft)] px-5 py-7 sm:px-7 sm:py-8 lg:px-10 lg:py-10">
-          <p className="text-sm font-medium text-[var(--accent)]">放进团队里，会这样表现</p>
-          <p className="mt-4 max-w-4xl font-serif text-[clamp(1.45rem,2.6vw,2.35rem)] leading-[1.42] tracking-[-0.01em]">
-            {teamScenario}
-          </p>
-        </article>
+      <div
+        className={`grid border-t border-[var(--line)] ${
+          teamScenario ? "lg:grid-cols-[minmax(0,1.28fr)_minmax(18rem,0.72fr)]" : ""
+        }`}
+      >
+        {teamScenario ? (
+          <article className="relative bg-[var(--accent-soft)] px-5 py-7 sm:px-7 sm:py-8 lg:px-10 lg:py-10">
+            <p className="text-sm font-medium text-[var(--accent)]">放进团队里，会这样表现</p>
+            <p className="mt-4 max-w-4xl font-serif text-[clamp(1.45rem,2.6vw,2.35rem)] leading-[1.42] tracking-[-0.01em]">
+              {teamScenario}
+            </p>
+          </article>
+        ) : null}
 
-        <aside className="border-t border-[var(--line)] px-5 py-7 sm:px-7 sm:py-8 lg:border-t-0 lg:border-l lg:px-8 lg:py-10">
+        <aside
+          className={`px-5 py-7 sm:px-7 sm:py-8 lg:py-10 ${
+            teamScenario
+              ? "border-t border-[var(--line)] lg:border-t-0 lg:border-l lg:px-8"
+              : "lg:px-10"
+          }`}
+        >
           <h2 className="font-serif text-2xl leading-tight">这个名字是什么意思</h2>
           <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{nameExplanation}</p>
         </aside>

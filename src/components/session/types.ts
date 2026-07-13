@@ -84,6 +84,18 @@ export interface KnowledgeReading {
   sources: KnowledgeCitation[];
 }
 
+export interface InterpretationLayer {
+  title: string;
+  summary: string;
+}
+
+export interface LayeredReading {
+  surfacePhenomenon: InterpretationLayer;
+  deepStructure: InterpretationLayer;
+  realityGround: InterpretationLayer;
+  observableExpression: InterpretationLayer;
+}
+
 export interface BreakthroughAction {
   kind: "observe" | "test" | "revise";
   title: string;
@@ -133,6 +145,7 @@ export interface SessionResult {
   dimensions: DimensionSignal[];
   knowledge?: KnowledgeReading;
   practicalProfile?: PracticalProfile;
+  layeredReading?: LayeredReading;
   breakthrough?: BreakthroughClosure;
   uncertainties: string[];
   nextQuestion: string;

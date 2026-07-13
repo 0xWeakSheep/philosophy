@@ -12,6 +12,7 @@ import { BreakthroughPlan } from "./breakthrough-plan";
 import { CounterfactualLab } from "./counterfactual-lab";
 import { FeedbackPanel } from "./feedback-panel";
 import { HypothesisReview } from "./hypothesis-review";
+import { LayeredResultReading } from "./layered-result-reading";
 import { PracticalResultSummary } from "./practical-result-summary";
 import { WorldviewCube } from "./worldview-cube";
 
@@ -183,7 +184,7 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
             canonicalName={canonicalName}
             code={result.knowledge?.code ?? profile.code.replaceAll("–", "-")}
             plainSummary={practicalProfile.plainSummary}
-            teamScenario={practicalProfile.teamScenario}
+            {...(result.layeredReading ? {} : { teamScenario: practicalProfile.teamScenario })}
             strengths={practicalProfile.strengths}
             blindSpots={practicalProfile.blindSpots}
             nameExplanation={practicalProfile.nameExplanation}
@@ -192,8 +193,12 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
           />
         </section>
 
+        {result.layeredReading ? <LayeredResultReading {...result.layeredReading} /> : null}
+
         <section
-          className="border-t border-[var(--line)] py-7 sm:py-10"
+          className={`py-7 sm:py-10 ${
+            result.layeredReading ? "" : "border-t border-[var(--line)]"
+          }`}
           aria-label="世界观角色形象"
         >
           <div className="mb-6 max-w-xl">
