@@ -8,6 +8,7 @@ import { MirrorChamber } from "@/components/session/mirror-chamber";
 import type { DimensionKey, MirrorSession } from "@/components/session/types";
 import { unwrapSession } from "@/components/session/types";
 import { createWorldviewProfile } from "@/lib/worldview-profile";
+import { BreakthroughPlan } from "./breakthrough-plan";
 import { CounterfactualLab } from "./counterfactual-lab";
 import { FeedbackPanel } from "./feedback-panel";
 import { HypothesisReview } from "./hypothesis-review";
@@ -155,9 +156,13 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
           <WorldviewCube profile={profile} />
         </section>
 
-        <div className="border-y border-[var(--line)] py-5">
-          <p className="font-serif text-xl text-[var(--ink)]">{profile.blindSpot}</p>
-        </div>
+        {result.breakthrough ? (
+          <BreakthroughPlan breakthrough={result.breakthrough} />
+        ) : (
+          <div className="border-y border-[var(--line)] py-5">
+            <p className="font-serif text-xl text-[var(--ink)]">{profile.blindSpot}</p>
+          </div>
+        )}
 
         <CounterfactualLab sessionId={session.id} dimensions={result.dimensions} />
 

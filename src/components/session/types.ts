@@ -76,11 +76,45 @@ export interface KnowledgeReading {
   sources: KnowledgeCitation[];
 }
 
+export interface BreakthroughAction {
+  kind: "observe" | "test" | "revise";
+  title: string;
+  instruction: string;
+  completionSignal: string;
+}
+
+export interface BreakthroughClosure {
+  focusDimension: DimensionKey;
+  focusLabel: string;
+  moveName: string;
+  directRebuttal: {
+    targetClaim: string;
+    statement: string;
+    reasoning: string;
+    evidence: EvidenceItem & { note?: string };
+    source?: KnowledgeCitation;
+  };
+  reframe: {
+    from: string;
+    to: string;
+    hingeQuestion: string;
+  };
+  actions: [BreakthroughAction, BreakthroughAction, BreakthroughAction];
+  uncertaintyBoundary: {
+    confidence: "low" | "medium";
+    supported: string;
+    unknown: string;
+    wouldChangeReading: string;
+    scope: "current_topic_only";
+  };
+}
+
 export interface SessionResult {
   coreTension: string;
   hypotheses: Hypothesis[];
   dimensions: DimensionSignal[];
   knowledge?: KnowledgeReading;
+  breakthrough?: BreakthroughClosure;
   uncertainties: string[];
   nextQuestion: string;
   window: {
