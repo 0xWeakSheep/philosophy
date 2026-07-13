@@ -298,12 +298,12 @@ export function WorldviewCube({ profile }: WorldviewCubeProps) {
           <p className="font-mono text-[11px] tracking-[0.12em] text-[var(--accent)]">
             {profile.archetypeFamily} · 本题思想角色
           </p>
-          <h1
+          <h2
             id={`${titleId}-card-title`}
             className="display-type mt-2 max-w-3xl text-3xl sm:text-4xl"
           >
             {profile.archetypeTitle}
-          </h1>
+          </h2>
           <p className="mt-2 font-serif text-lg text-[var(--accent)]">{profile.name}</p>
           <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {profile.archetypeLine}

@@ -12,6 +12,7 @@ import { BreakthroughPlan } from "./breakthrough-plan";
 import { CounterfactualLab } from "./counterfactual-lab";
 import { FeedbackPanel } from "./feedback-panel";
 import { HypothesisReview } from "./hypothesis-review";
+import { PracticalResultSummary } from "./practical-result-summary";
 import { WorldviewCube } from "./worldview-cube";
 
 interface ResultExperienceProps {
@@ -24,6 +25,10 @@ const dimensionNames: Record<DimensionKey, string> = {
   phenomenology: "现象",
   teleology: "目的",
 };
+
+function withoutCoordinate(title: string): string {
+  return title.replace(/^[1-4](?:-[1-4]){3}\s*/u, "").trim();
+}
 
 export function ResultExperience({ sessionId }: ResultExperienceProps) {
   const router = useRouter();
@@ -60,7 +65,12 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
   const profile = useMemo(() => {
     if (!session?.result) return null;
     try {
-      return createWorldviewProfile(session.result.dimensions, session.topic);
+      const displayTopic =
+        session.topicOrigin === "explicit" ||
+        (!session.topic.startsWith("围绕“") && !session.topic.startsWith("从“"))
+          ? session.topic
+          : session.intake;
+      return createWorldviewProfile(session.result.dimensions, displayTopic);
     } catch {
       return null;
     }
@@ -131,6 +141,22 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
   }
 
   const result = session.result;
+  const canonicalName =
+    result.practicalProfile?.canonicalName ??
+    (result.knowledge ? withoutCoordinate(result.knowledge.title) : profile.name);
+  const practicalProfile = result.practicalProfile ?? {
+    plainSummary: result.knowledge?.summary ?? result.coreTension,
+    teamScenario: `团队出现分歧时，你通常会先把“${result.coreTension}”变成可以讨论的判断，再决定由谁行动、怎样验证。`,
+    strengths: result.knowledge?.capabilities ?? [...profile.traits],
+    blindSpots: result.knowledge?.blindSpots ?? [profile.blindSpot.replace(/^提醒[：:]\s*/u, "")],
+    nameExplanation: `“${canonicalName}”是对这次议题中四个判断维度的简称，不是固定人格标签。`,
+    verificationQuestion: result.nextQuestion,
+  };
+  const visualProfile = {
+    ...profile,
+    name: canonicalName,
+    shareText: `在“${session.topic}”上，我是${canonicalName}（${profile.code}）。\n${practicalProfile.plainSummary}\n只描述这次议题，不是固定人格。`,
+  };
 
   return (
     <main
@@ -152,8 +178,33 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
           </button>
         </header>
 
-        <section className="py-7 sm:py-9" aria-label="世界观身份卡">
-          <WorldviewCube profile={profile} />
+        <section className="py-7 sm:py-9" aria-label="这份结果的现实表现">
+          <PracticalResultSummary
+            canonicalName={canonicalName}
+            code={result.knowledge?.code ?? profile.code.replaceAll("–", "-")}
+            plainSummary={practicalProfile.plainSummary}
+            teamScenario={practicalProfile.teamScenario}
+            strengths={practicalProfile.strengths}
+            blindSpots={practicalProfile.blindSpots}
+            nameExplanation={practicalProfile.nameExplanation}
+            verificationQuestion={practicalProfile.verificationQuestion}
+            scopeNote={profile.scopeNote}
+          />
+        </section>
+
+        <section
+          className="border-t border-[var(--line)] py-7 sm:py-10"
+          aria-label="世界观角色形象"
+        >
+          <div className="mb-6 max-w-xl">
+            <p className="font-mono text-[0.68rem] tracking-[0.13em] text-[var(--accent)]">
+              角色形象与四维坐标
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              形象帮助你记住结果，具体判断仍以上面的现实表现为准。
+            </p>
+          </div>
+          <WorldviewCube profile={visualProfile} />
         </section>
 
         {result.breakthrough ? (
@@ -207,36 +258,34 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
           </ResultDetails>
 
           {result.knowledge ? (
-            <ResultDetails title="知识库命中" hint={result.knowledge.code}>
-              <div className="grid gap-7 py-8 lg:grid-cols-[0.78fr_1.22fr]">
+            <ResultDetails
+              title="这份结果怎么来的"
+              hint={`${result.knowledge.code} · ${result.knowledge.sources.length} 条依据`}
+            >
+              <div className="grid gap-7 py-8 lg:grid-cols-[0.7fr_1.3fr]">
                 <div>
                   <p className="coordinate-type text-3xl text-[var(--accent)]">
                     {result.knowledge.code}
                   </p>
-                  <h2 className="mt-2 font-serif text-2xl">{result.knowledge.title}</h2>
+                  <h2 className="mt-2 font-serif text-2xl">{canonicalName}</h2>
                   <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                    {result.knowledge.summary}
+                    四个数字依次对应场域、本体、现象与目的。下面列出本次真正命中的知识库条目，方便你核对，而不是要求你先去翻文档才能看懂结果。
                   </p>
                 </div>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <KnowledgeList title="可能能力" items={result.knowledge.capabilities} />
-                  <KnowledgeList title="典型盲区" items={result.knowledge.blindSpots} />
-                  <div className="sm:col-span-2">
-                    <p className="font-mono text-[10px] tracking-[0.12em] text-[var(--muted)]">
-                      SOURCES
-                    </p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {result.knowledge.sources.slice(0, 4).map((source) => (
-                        <p
-                          key={`${source.kind}-${source.sourcePath}`}
-                          className="border-l border-[var(--line-strong)] pl-3 text-xs leading-5 text-[var(--muted)]"
-                        >
-                          <span className="text-[var(--ink)]">{source.title}</span>
-                          <br />
-                          {source.sourcePath}
-                        </p>
-                      ))}
-                    </div>
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.12em] text-[var(--muted)]">
+                    KNOWLEDGE SOURCES
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {result.knowledge.sources.slice(0, 4).map((source) => (
+                      <div
+                        key={`${source.kind}-${source.sourcePath}`}
+                        className="border-l border-[var(--line-strong)] pl-3 text-xs leading-5 text-[var(--muted)]"
+                      >
+                        <p className="font-medium text-[var(--ink)]">{source.title}</p>
+                        <p className="mt-1">{source.excerpt}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -255,21 +304,6 @@ export function ResultExperience({ sessionId }: ResultExperienceProps) {
         </footer>
       </div>
     </main>
-  );
-}
-
-function KnowledgeList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div>
-      <p className="font-mono text-[10px] tracking-[0.12em] text-[var(--muted)]">{title}</p>
-      <div className="mt-3 grid gap-2">
-        {items.slice(0, 3).map((item) => (
-          <p key={item} className="border-l border-[var(--accent)] pl-3 text-sm leading-6">
-            {item}
-          </p>
-        ))}
-      </div>
-    </div>
   );
 }
 

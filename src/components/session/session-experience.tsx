@@ -291,6 +291,14 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
   }
 
   const progress = Math.min(session.questionIndex + 1, session.totalQuestions);
+  const philosophicalQuestion = assistantMessage?.content;
+  const plainQuestion = assistantMessage?.plainLanguage?.trim();
+  const currentQuestion = plainQuestion || philosophicalQuestion || "你愿意先停在哪一句话上？";
+  const showPhilosophicalQuestion =
+    plainQuestion !== undefined &&
+    plainQuestion.length > 0 &&
+    philosophicalQuestion !== undefined &&
+    plainQuestion !== philosophicalQuestion;
 
   return (
     <main
@@ -371,23 +379,31 @@ export function SessionExperience({ sessionId }: SessionExperienceProps) {
                 <div className="flex items-center gap-2.5">
                   <span className="h-px w-7 bg-[var(--accent)]" aria-hidden="true" />
                   <p className="font-mono text-[0.68rem] tracking-[0.15em] text-[var(--accent)]">
-                    追问
+                    这一题想问
                   </p>
                 </div>
                 <h1
                   id="current-question"
                   className="question-type mt-1 max-w-3xl text-[clamp(1.5rem,2vw,2.1rem)]"
                 >
-                  {assistantMessage?.content ?? "你愿意先停在哪一句话上？"}
+                  {currentQuestion}
                 </h1>
                 {assistantMessage?.example ? (
-                  <div className="mt-2.5 flex max-w-3xl items-start gap-3 border-l-2 border-[var(--accent)] bg-[var(--surface)] px-3 py-2">
-                    <span className="shrink-0 pt-0.5 font-mono text-[0.62rem] tracking-[0.13em] text-[var(--accent)]">
+                  <div className="mt-3 max-w-3xl border-l-2 border-[var(--accent)] bg-[var(--accent-soft)] px-3.5 py-2.5">
+                    <span className="font-mono text-[0.64rem] tracking-[0.11em] text-[var(--accent)]">
                       放到现实里
                     </span>
-                    <p className="text-[0.82rem] leading-[1.55] text-[var(--muted)]">
+                    <p className="mt-1 text-sm leading-[1.55] text-[var(--ink)]">
                       {assistantMessage.example}
                     </p>
+                  </div>
+                ) : null}
+                {showPhilosophicalQuestion ? (
+                  <div className="mt-2 flex max-w-3xl items-start gap-2.5 border-l border-[var(--line-strong)] pl-3 text-xs leading-5 text-[var(--muted)]">
+                    <span className="shrink-0 font-mono text-[0.61rem] tracking-[0.08em]">
+                      原来的哲学问法
+                    </span>
+                    <p>{highlightedText(philosophicalQuestion, session.marker)}</p>
                   </div>
                 ) : null}
               </motion.div>

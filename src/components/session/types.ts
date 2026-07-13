@@ -23,6 +23,7 @@ export interface SessionMessage {
   id: string;
   role: "user" | "assistant" | "mirror";
   content: string;
+  plainLanguage?: string;
   example?: string;
   dimension?: DimensionKey;
 }
@@ -31,13 +32,14 @@ export type AnswerSuggestionLens = "agency" | "conditions" | "integrated" | "unc
 
 export interface AnswerSuggestion {
   id: string;
+  title?: string;
   content: string;
   example?: string;
   lens?: AnswerSuggestionLens;
 }
 
 export function suggestionAnswerText(suggestion: AnswerSuggestion): string {
-  return suggestion.example ? `${suggestion.content}\n${suggestion.example}` : suggestion.content;
+  return suggestion.content;
 }
 
 export interface EvidenceItem {
@@ -115,11 +117,22 @@ export interface BreakthroughClosure {
   };
 }
 
+export interface PracticalProfile {
+  canonicalName?: string;
+  plainSummary: string;
+  teamScenario: string;
+  strengths: string[];
+  blindSpots: string[];
+  nameExplanation: string;
+  verificationQuestion: string;
+}
+
 export interface SessionResult {
   coreTension: string;
   hypotheses: Hypothesis[];
   dimensions: DimensionSignal[];
   knowledge?: KnowledgeReading;
+  practicalProfile?: PracticalProfile;
   breakthrough?: BreakthroughClosure;
   uncertainties: string[];
   nextQuestion: string;
@@ -133,6 +146,7 @@ export interface MirrorSession {
   id: string;
   stage: SessionStage;
   topic: string;
+  topicOrigin?: "derived" | "explicit";
   intake: string;
   marker: string;
   questionIndex: number;
@@ -196,6 +210,7 @@ export function unwrapAnswerSuggestions(payload: unknown): AnswerSuggestionsPayl
     .map(
       (suggestion): AnswerSuggestion => ({
         id: suggestion.id as string,
+        ...(typeof suggestion.title === "string" ? { title: suggestion.title } : {}),
         content: suggestion.content as string,
         ...(typeof suggestion.example === "string" ? { example: suggestion.example } : {}),
         ...(suggestion.lens === "agency" ||

@@ -35,18 +35,20 @@ export function AnswerSuggestions({
       aria-labelledby="answer-suggestions-title"
       aria-busy={refreshing}
     >
-      <div className="flex min-h-11 items-center justify-between gap-2 lg:min-h-9">
-        <h2
-          id="answer-suggestions-title"
-          className="shrink-0 font-mono text-[0.7rem] tracking-[0.13em] text-[var(--ink)]"
-        >
-          备选回答
-        </h2>
+      <div className="flex min-h-11 items-center justify-between gap-3">
+        <div>
+          <h2 id="answer-suggestions-title" className="text-sm font-medium text-[var(--ink)]">
+            哪句话更像你的真实想法
+          </h2>
+          <p className="mt-0.5 text-[0.7rem] leading-4 text-[var(--muted)]">
+            例子只帮助理解，不会写进你的回答。手机上可左右滑动比较。
+          </p>
+        </div>
         <button
           type="button"
           onClick={onRefresh}
           disabled={disabled || refreshing}
-          className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 px-1 text-xs text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none lg:min-h-9"
+          className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 px-1 text-xs text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none"
         >
           <ArrowsClockwise
             aria-hidden="true"
@@ -58,9 +60,17 @@ export function AnswerSuggestions({
       </div>
 
       {suggestions.length > 0 ? (
-        <div className="mt-1.5 grid grid-cols-1 gap-1.5 min-[360px]:grid-cols-2">
+        <div className="mt-2 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0">
           {suggestions.map((suggestion, index) => {
             const selected = suggestion.id === selectedId;
+            const suggestedTitle = suggestion.title?.trim();
+            const title =
+              suggestedTitle ||
+              (suggestion.lens ? lensLabels[suggestion.lens] : `选项 ${index + 1}`);
+            const meta =
+              suggestedTitle && suggestion.lens
+                ? lensLabels[suggestion.lens]
+                : String(index + 1).padStart(2, "0");
             return (
               <button
                 key={suggestion.id}
@@ -69,37 +79,39 @@ export function AnswerSuggestions({
                 aria-controls="answer"
                 disabled={disabled}
                 onClick={() => onSelect(suggestion)}
-                className={`group relative min-h-[5.35rem] cursor-pointer border px-2.5 py-1.5 text-left transition-[border-color,background-color,color] duration-200 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none sm:py-2 ${
+                className={`group relative min-h-[8.75rem] w-[82vw] max-w-[20rem] shrink-0 snap-start cursor-pointer border px-3 py-3 text-left transition-[border-color,background-color,color,transform] duration-200 active:translate-y-px focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none sm:w-auto sm:max-w-none ${
                   selected
                     ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                     : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-solid)]"
                 }`}
               >
-                <span className="flex items-center justify-between gap-2 pr-7">
+                <span className="flex items-start justify-between gap-3 pr-7">
+                  <span className="font-serif text-base leading-tight text-[var(--ink)]">
+                    {title}
+                  </span>
                   <span
-                    className={`font-mono text-[0.62rem] tracking-[0.13em] ${
+                    className={`shrink-0 font-mono text-[0.62rem] tracking-[0.08em] ${
                       selected ? "text-[var(--accent)]" : "text-[var(--muted)]"
                     }`}
-                    aria-hidden="true"
                   >
-                    {String(index + 1).padStart(2, "0")}
+                    {meta}
                   </span>
-                  {suggestion.lens ? (
-                    <span className="font-sans text-[0.64rem] tracking-[0.08em] text-[var(--muted)]">
-                      {lensLabels[suggestion.lens]}
-                    </span>
-                  ) : null}
                 </span>
-                <span className="mt-0.5 block font-serif text-[0.8rem] leading-[1.3] tracking-[-0.01em] text-[var(--ink)]">
+                <span className="mt-2 block text-sm leading-[1.45] text-[var(--ink)]">
                   {suggestion.content}
                 </span>
                 {suggestion.example ? (
-                  <span className="mt-1 block border-t border-[var(--line)] pt-1 font-sans text-[0.7rem] leading-[1.3] text-[var(--muted)]">
-                    {suggestion.example}
+                  <span className="mt-2 block border-l-2 border-[var(--accent)] bg-[var(--surface)] px-2.5 py-2">
+                    <span className="block font-mono text-[0.61rem] tracking-[0.08em] text-[var(--accent)]">
+                      放到现实里
+                    </span>
+                    <span className="mt-0.5 block text-[0.78rem] leading-[1.45] text-[var(--ink)]">
+                      {suggestion.example}
+                    </span>
                   </span>
                 ) : null}
                 {selected ? (
-                  <span className="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-contrast)]">
+                  <span className="absolute top-3 right-3 grid size-5 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-contrast)]">
                     <Check aria-hidden="true" size={12} weight="bold" />
                     <span className="sr-only">已选中</span>
                   </span>
