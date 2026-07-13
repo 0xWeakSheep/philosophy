@@ -1,8 +1,14 @@
 "use client";
 
 import { type CSSProperties, useId } from "react";
+import {
+  type CharacterAxisValue,
+  type CharacterStructureSpec,
+  createCharacterRenderSpec,
+  resolveCharacterValues,
+} from "@/lib/worldview-character-model";
 
-export type WorldviewCharacterAxisValue = 0 | 1 | 2 | 3;
+export type WorldviewCharacterAxisValue = CharacterAxisValue;
 
 export interface WorldviewCharacterAxis {
   readonly key: string;
@@ -27,20 +33,6 @@ interface WorldviewCharacterProps {
 }
 
 type CharacterAxisKey = "field" | "ontology" | "phenomenology" | "teleology";
-type CharacterValues = readonly [
-  WorldviewCharacterAxisValue,
-  WorldviewCharacterAxisValue,
-  WorldviewCharacterAxisValue,
-  WorldviewCharacterAxisValue,
-];
-
-interface CharacterPalette {
-  readonly accent: string;
-  readonly soft: string;
-  readonly coat: string;
-  readonly lens: string;
-  readonly name: string;
-}
 
 const CHARACTER_AXIS_ORDER = [
   "field",
@@ -64,51 +56,6 @@ const CHARACTER_VARIANT_NAMES = {
 } as const satisfies Record<CharacterAxisKey, readonly [string, string, string, string]>;
 
 const SIGIL_SLOTS = [0, 1, 2, 3] as const;
-
-const CHARACTER_PALETTES = [
-  [
-    { name: "砖红档案", accent: "#d76f61", soft: "#d76f6126", coat: "#2c2221", lens: "#322726" },
-    { name: "赤陶锋面", accent: "#c95f70", soft: "#c95f7026", coat: "#2c2025", lens: "#34242a" },
-    { name: "暖铜灯室", accent: "#d7864d", soft: "#d7864d26", coat: "#2d251e", lens: "#35291f" },
-    { name: "珊瑚新页", accent: "#dc665c", soft: "#dc665c26", coat: "#2e211f", lens: "#362522" },
-  ],
-  [
-    { name: "赭石警戒", accent: "#c99b4c", soft: "#c99b4c26", coat: "#2b271d", lens: "#332d20" },
-    { name: "琥珀裂光", accent: "#d48a3f", soft: "#d48a3f26", coat: "#2e241b", lens: "#37291d" },
-    { name: "苔金回路", accent: "#a9a855", soft: "#a9a85526", coat: "#28291f", lens: "#303124" },
-    { name: "橙焰出口", accent: "#d97745", soft: "#d9774526", coat: "#30221b", lens: "#39271d" },
-  ],
-  [
-    { name: "青瓷定标", accent: "#54a398", soft: "#54a39826", coat: "#1d2928", lens: "#213230" },
-    { name: "潮蓝折面", accent: "#5496aa", soft: "#5496aa26", coat: "#1d282d", lens: "#223139" },
-    { name: "群青内核", accent: "#6b83bf", soft: "#6b83bf26", coat: "#202532", lens: "#252c3c" },
-    { name: "松绿生长", accent: "#499d7e", soft: "#499d7e26", coat: "#1c2924", lens: "#20332b" },
-  ],
-  [
-    { name: "暮紫观测", accent: "#8c78bf", soft: "#8c78bf26", coat: "#272232", lens: "#2d273b" },
-    { name: "梅色岔路", accent: "#a16d9b", soft: "#a16d9b26", coat: "#2c222d", lens: "#352738" },
-    { name: "雾蓝远行", accent: "#778bc3", soft: "#778bc326", coat: "#222733", lens: "#282e3e" },
-    { name: "莓红星图", accent: "#b36e7f", soft: "#b36e7f26", coat: "#302329", lens: "#392831" },
-  ],
-] as const satisfies readonly (readonly CharacterPalette[])[];
-
-function characterPalette(values: CharacterValues): CharacterPalette {
-  return CHARACTER_PALETTES[values[0]]?.[values[3]] ?? CHARACTER_PALETTES[0][0];
-}
-
-function clampValue(value: number | undefined): WorldviewCharacterAxisValue {
-  return Math.min(3, Math.max(0, Math.round(value ?? 0))) as WorldviewCharacterAxisValue;
-}
-
-function findAxisValue(
-  profile: WorldviewCharacterProfile,
-  key: CharacterAxisKey,
-  fallbackIndex: number,
-): WorldviewCharacterAxisValue {
-  const axis =
-    profile.axes.find((candidate) => candidate.key === key) ?? profile.axes[fallbackIndex];
-  return clampValue(axis?.value ?? profile.emblem[fallbackIndex]);
-}
 
 function displayCode(code: string): string {
   const digits = code.match(/[1-4]/gu)?.slice(0, 4);
@@ -237,21 +184,21 @@ function FieldScene({ value, gridId }: { value: WorldviewCharacterAxisValue; gri
   );
 }
 
-function HeadVariant({ value }: { value: WorldviewCharacterAxisValue }) {
+function FaceShape({ value }: { value: WorldviewCharacterAxisValue }) {
   if (value === 0) {
     return (
       <g>
         <rect
-          x="322"
-          y="153"
-          width="116"
-          height="126"
-          rx="37"
+          x="319"
+          y="151"
+          width="122"
+          height="132"
+          rx="24"
           fill="var(--paper)"
           stroke="var(--ink)"
           strokeWidth="4"
         />
-        <path d="M318 177H442V206L422 183H338L318 206Z" fill="var(--ink)" />
+        <path d="M318 177H442V204L423 183H337L318 204Z" fill="var(--ink)" />
         <path
           d="M313 146H447V169H420V145H340V169H313Z"
           fill="var(--accent)"
@@ -272,16 +219,17 @@ function HeadVariant({ value }: { value: WorldviewCharacterAxisValue }) {
     return (
       <g>
         <path
-          d="M380 146C421 146 447 175 443 218C440 251 420 280 380 284C340 280 320 251 317 218C313 175 339 146 380 146Z"
+          d="M380 139L438 171L450 218L421 270L380 289L335 268L310 216L329 165Z"
           fill="var(--paper)"
           stroke="var(--ink)"
           strokeWidth="4"
+          strokeLinejoin="round"
         />
-        <path d="M380 145C340 136 316 150 300 178L348 174L380 198Z" fill="var(--ink)" />
-        <path d="M380 145C420 136 444 150 460 178L412 174L380 198Z" fill="var(--accent)" />
-        <path d="M380 132V188" stroke="var(--paper)" strokeWidth="3" />
+        <path d="M380 139L329 165L306 190L354 177L380 200Z" fill="var(--ink)" />
+        <path d="M380 139L438 171L459 196L409 177L380 200Z" fill="var(--accent)" />
+        <path d="M380 128V197" stroke="var(--paper)" strokeWidth="3" />
         <path
-          d="M319 204L301 225L323 232M441 204L459 225L437 232"
+          d="M314 202L294 224L319 235M445 202L465 224L440 235"
           fill="none"
           stroke="var(--ink)"
           strokeWidth="4"
@@ -293,11 +241,11 @@ function HeadVariant({ value }: { value: WorldviewCharacterAxisValue }) {
   if (value === 2) {
     return (
       <g>
-        <circle cx="380" cy="216" r="64" fill="var(--paper)" stroke="var(--ink)" strokeWidth="4" />
-        <path d="M329 187C342 142 418 142 431 187C407 173 353 173 329 187Z" fill="var(--ink)" />
-        <circle cx="380" cy="139" r="35" fill="none" stroke="var(--accent)" strokeWidth="5" />
-        <circle cx="380" cy="139" r="7" fill="var(--accent)" />
-        <path d="M353 133H407" stroke="var(--ink)" strokeWidth="4" />
+        <circle cx="380" cy="216" r="68" fill="var(--paper)" stroke="var(--ink)" strokeWidth="4" />
+        <path d="M325 190C337 139 423 139 435 190C406 167 354 167 325 190Z" fill="var(--ink)" />
+        <circle cx="380" cy="135" r="39" fill="none" stroke="var(--accent)" strokeWidth="6" />
+        <circle cx="380" cy="135" r="9" fill="var(--accent)" />
+        <path d="M347 128H413" stroke="var(--ink)" strokeWidth="4" />
       </g>
     );
   }
@@ -305,22 +253,22 @@ function HeadVariant({ value }: { value: WorldviewCharacterAxisValue }) {
   return (
     <g>
       <path
-        d="M309 221C305 169 332 133 382 137C431 127 458 159 451 208C464 250 430 287 380 286C329 289 298 255 309 221Z"
+        d="M306 223C301 166 333 127 385 137C438 123 463 160 450 207C467 255 426 292 376 285C327 294 293 256 306 223Z"
         fill="var(--surface-solid)"
         stroke="var(--ink)"
         strokeWidth="4"
       />
       <ellipse
-        cx="380"
-        cy="218"
-        rx="57"
-        ry="64"
+        cx="378"
+        cy="220"
+        rx="54"
+        ry="69"
         fill="var(--paper)"
         stroke="var(--ink)"
         strokeWidth="3"
       />
       <path
-        d="M318 181C329 137 379 111 436 143C409 148 389 157 377 180C361 163 342 164 318 181Z"
+        d="M313 184C322 135 379 105 443 142C411 148 390 158 376 183C359 162 337 165 313 184Z"
         fill="var(--accent)"
       />
       <path d="M436 143C452 153 458 176 455 198" fill="none" stroke="var(--ink)" strokeWidth="4" />
@@ -334,139 +282,226 @@ function HeadVariant({ value }: { value: WorldviewCharacterAxisValue }) {
   );
 }
 
-function ExpressionVariant({ values }: { values: CharacterValues }) {
-  const [field, ontology, phenomenology, teleology] = values;
-  const pupilOffset = ontology * 2 - 3;
-  const browPaths = [
-    "M337 192L366 192M394 192L423 192",
-    "M337 196L365 187M395 187L423 196",
-    "M337 187L365 194M395 194L423 187",
-    "M337 194Q351 181 366 192M394 192Q409 181 423 194",
+function BrowVariant({ value }: { value: WorldviewCharacterAxisValue }) {
+  const paths = [
+    "M334 191H367M393 191H426",
+    "M332 188L366 178M394 198L427 202",
+    "M333 183L367 195M393 195L427 183",
+    "M332 193Q349 174 368 189M392 189Q411 174 428 193",
   ] as const;
-  const nosePaths = [
-    "M380 221V238",
-    "M375 236L383 224L389 237",
-    "M375 232Q380 238 386 232",
-    "M377 228L384 236",
-  ] as const;
-  const mouthPaths = [
-    "M365 251Q380 256 396 251",
-    "M367 249L380 243L395 252L381 259Z",
-    "M367 253Q380 246 396 253",
-    "M363 247Q380 266 399 247Q382 258 363 247Z",
-  ] as const;
-
   return (
-    <g>
-      <path
-        d={browPaths[field]}
-        fill="none"
-        stroke="var(--ink)"
-        strokeLinecap="round"
-        strokeWidth={field === 3 ? 3 : 4}
-      />
+    <path
+      d={paths[value]}
+      fill="none"
+      stroke="var(--ink)"
+      strokeLinecap="round"
+      strokeWidth={value === 3 ? 3 : 5}
+    />
+  );
+}
 
-      {phenomenology === 0 ? (
-        <g>
-          <g fill="var(--surface)" stroke="var(--ink)" strokeWidth="3">
-            <rect x="337" y="202" width="38" height="30" rx={ontology === 0 ? 6 : 11} />
-            <rect x="385" y="202" width="38" height="30" rx={ontology === 0 ? 6 : 11} />
-            <path d="M375 213H385" />
-          </g>
-          <g className="worldview-character__blink" fill="var(--ink)">
-            <circle cx={357 + pupilOffset} cy="217" r="4" />
-            <circle cx={404 + pupilOffset} cy="217" r="4" />
-          </g>
-        </g>
-      ) : null}
-
-      {phenomenology === 1 ? (
-        <g>
-          <g fill="var(--accent-soft)" stroke="var(--ink)" strokeWidth="3">
-            <circle cx="354" cy="217" r="18" />
-            <circle cx="407" cy="217" r="18" />
-            <path d="M372 213C377 209 382 209 389 213" fill="none" />
-          </g>
-          <g className="worldview-character__blink" fill="var(--ink)">
-            <circle cx={354 + pupilOffset} cy="218" r={ontology === 2 ? 5 : 4} />
-            <circle cx={407 - pupilOffset} cy="218" r={ontology === 2 ? 5 : 4} />
-          </g>
-        </g>
-      ) : null}
-
-      {phenomenology === 2 ? (
-        <g>
-          <circle
-            cx="354"
-            cy="214"
-            r="25"
-            fill="var(--surface)"
-            stroke="var(--accent)"
-            strokeWidth="4"
-          />
-          <path d="M336 232L322 260" stroke="var(--accent)" strokeLinecap="round" strokeWidth="5" />
-          <g className="worldview-character__blink" fill="var(--ink)">
-            <circle cx={354 + pupilOffset} cy="214" r="5" />
-            <path d="M394 216Q407 206 420 216Q407 224 394 216Z" />
-          </g>
-        </g>
-      ) : null}
-
-      {phenomenology === 3 ? (
+function EyesVariant({
+  value,
+  gaze,
+}: {
+  value: WorldviewCharacterAxisValue;
+  gaze: WorldviewCharacterAxisValue;
+}) {
+  const gazeOffsets = [-2, -7, 0, 7] as const;
+  const offset = gazeOffsets[gaze];
+  if (value === 0) {
+    return (
+      <g>
+        <path d="M327 202H433V232H327Z" fill="var(--surface)" stroke="var(--ink)" strokeWidth="4" />
+        <path d="M380 203V231" stroke="var(--ink)" strokeWidth="3" />
         <g
           className="worldview-character__blink"
-          fill="none"
           stroke="var(--ink)"
           strokeLinecap="round"
-          strokeWidth="4"
+          strokeWidth="5"
         >
-          <path d={ontology % 2 === 0 ? "M340 216Q354 204 368 216" : "M340 212Q354 222 368 212"} />
-          <path d={ontology < 2 ? "M392 216Q406 204 420 216" : "M392 212Q406 222 420 212"} />
+          <path d={`M340 217H${359 + offset}`} />
+          <path d={`M394 217H${413 + offset}`} />
         </g>
-      ) : null}
-
-      <path
-        d={nosePaths[ontology]}
-        fill="none"
-        stroke="var(--line-strong)"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
+      </g>
+    );
+  }
+  if (value === 1) {
+    return (
+      <g>
+        <circle
+          cx="352"
+          cy="215"
+          r="24"
+          fill="var(--accent-soft)"
+          stroke="var(--ink)"
+          strokeWidth="4"
+        />
+        <rect
+          x="394"
+          y="202"
+          width="27"
+          height="27"
+          rx="6"
+          fill="var(--surface)"
+          stroke="var(--ink)"
+          strokeWidth="4"
+          transform="rotate(12 407 215)"
+        />
+        <g className="worldview-character__blink" fill="var(--ink)">
+          <circle cx={352 + offset} cy="215" r="6" />
+          <circle cx={407 - offset * 0.55} cy="215" r="4" />
+        </g>
+      </g>
+    );
+  }
+  if (value === 2) {
+    return (
+      <g>
+        <circle
+          cx="351"
+          cy="214"
+          r="29"
+          fill="var(--surface)"
+          stroke="var(--accent)"
+          strokeWidth="5"
+        />
+        <path d="M330 235L313 264" stroke="var(--accent)" strokeLinecap="round" strokeWidth="6" />
+        <g className="worldview-character__blink" fill="var(--ink)">
+          <circle cx={351 + offset} cy="214" r="7" />
+          <path d="M393 220Q408 207 424 220Q408 226 393 220Z" />
+        </g>
+      </g>
+    );
+  }
+  return (
+    <g fill="none" stroke="var(--ink)" strokeLinecap="round" strokeWidth="4">
+      <path d="M334 216Q352 198 370 216Q352 228 334 216Z" />
+      <circle
+        className="worldview-character__blink"
+        cx={352 + offset}
+        cy="215"
+        r="5"
+        fill="var(--ink)"
       />
-      <path
-        d={mouthPaths[teleology]}
-        fill={teleology === 1 || teleology === 3 ? "var(--accent)" : "none"}
-        stroke="var(--ink)"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="3"
-      />
-
-      {field === 0 ? (
-        <path d="M340 241H351M410 241H421" stroke="var(--accent)" strokeWidth="2" />
-      ) : null}
-      {field === 1 ? (
-        <g fill="var(--accent)">
-          <path d="M338 238L344 246L350 238Z" />
-          <path d="M411 238L417 246L423 238Z" />
-        </g>
-      ) : null}
-      {field === 2 ? (
-        <circle cx={ontology < 2 ? 344 : 417} cy="243" r="4" fill="var(--accent)" />
-      ) : null}
-      {field === 3 ? (
-        <g fill="var(--accent)">
-          <circle cx="338" cy="239" r="2.5" />
-          <circle cx="347" cy="242" r="2.5" />
-          <circle cx="414" cy="239" r="2.5" />
-          <circle cx="423" cy="242" r="2.5" />
-        </g>
-      ) : null}
+      <path d="M392 214Q408 228 426 211" />
+      <path d="M398 205L392 197M408 203V194M418 205L424 197" strokeWidth="2.5" />
     </g>
   );
 }
 
-function PurposeArms({ value }: { value: WorldviewCharacterAxisValue }) {
+function NoseVariant({ value }: { value: WorldviewCharacterAxisValue }) {
+  const paths = [
+    "M380 220V240",
+    "M374 238L382 221L391 239L382 235Z",
+    "M374 232Q380 241 388 232Q381 227 374 232Z",
+    "M376 224Q385 230 384 240",
+  ] as const;
+  return (
+    <path
+      d={paths[value]}
+      fill={value === 2 ? "var(--accent-soft)" : "none"}
+      stroke="var(--line-strong)"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2.5"
+    />
+  );
+}
+
+function MouthVariant({ value }: { value: WorldviewCharacterAxisValue }) {
+  if (value === 0) {
+    return (
+      <path
+        d="M366 253H395M363 250L367 253L363 256M398 250L394 253L398 256"
+        fill="none"
+        stroke="var(--ink)"
+        strokeLinecap="round"
+        strokeWidth="3"
+      />
+    );
+  }
+  if (value === 1) {
+    return (
+      <g>
+        <path
+          d="M364 249L380 239L399 251L381 265Z"
+          fill="var(--accent)"
+          stroke="var(--ink)"
+          strokeLinejoin="round"
+          strokeWidth="3"
+        />
+        <path d="M371 249H392" stroke="var(--paper)" strokeWidth="3" />
+      </g>
+    );
+  }
+  if (value === 2) {
+    return (
+      <g fill="none" stroke="var(--ink)" strokeLinecap="round">
+        <path d="M364 258Q380 242 398 258" strokeWidth="4" />
+        <path d="M372 260H391" stroke="var(--accent)" strokeWidth="2" />
+      </g>
+    );
+  }
+  return (
+    <g>
+      <path
+        d="M361 246Q380 270 403 243Q384 262 361 246Z"
+        fill="var(--accent)"
+        stroke="var(--ink)"
+        strokeLinejoin="round"
+        strokeWidth="3"
+      />
+      <path d="M370 252Q383 258 394 249" fill="none" stroke="var(--paper)" strokeWidth="2.5" />
+    </g>
+  );
+}
+
+function FaceMarks({ value }: { value: WorldviewCharacterAxisValue }) {
+  if (value === 0)
+    return <path d="M334 243H352M408 243H426" stroke="var(--accent)" strokeWidth="3" />;
+  if (value === 1) {
+    return (
+      <g fill="var(--accent)">
+        <path d="M332 238L341 250L351 238Z" />
+        <path d="M409 238L418 250L428 238Z" />
+      </g>
+    );
+  }
+  if (value === 2) return <path d="M337 244L344 232L351 244L344 241Z" fill="var(--accent)" />;
+  return (
+    <g fill="var(--accent)">
+      <circle cx="334" cy="240" r="3" />
+      <circle cx="345" cy="244" r="3" />
+      <circle cx="416" cy="244" r="3" />
+      <circle cx="427" cy="240" r="3" />
+    </g>
+  );
+}
+
+function HeadAssembly({ structure }: { structure: CharacterStructureSpec }) {
+  return (
+    <g
+      transform={structure.pose.headTransform}
+      data-face-variant={`${structure.faceShape}-${structure.expression.eyes}-${structure.expression.mouth}`}
+    >
+      <FaceShape value={structure.faceShape} />
+      <BrowVariant value={structure.expression.brow} />
+      <EyesVariant value={structure.expression.eyes} gaze={structure.expression.gaze} />
+      <NoseVariant value={structure.expression.nose} />
+      <MouthVariant value={structure.expression.mouth} />
+      <FaceMarks value={structure.expression.cheek} />
+    </g>
+  );
+}
+
+function PurposeArms({
+  field,
+  purpose,
+}: {
+  field: WorldviewCharacterAxisValue;
+  purpose: WorldviewCharacterAxisValue;
+}) {
   const sleeveStyle = {
     fill: "none",
     stroke: "var(--surface-solid)",
@@ -480,45 +515,125 @@ function PurposeArms({ value }: { value: WorldviewCharacterAxisValue }) {
     strokeWidth: 35,
   };
 
+  const paths = [
+    [
+      { left: "M326 330Q338 365 353 389", right: "M434 330Q422 365 407 389" },
+      { left: "M326 330Q282 354 353 389", right: "M434 330Q478 354 407 389" },
+      { left: "M326 330Q390 349 407 389", right: "M434 330Q370 349 353 389" },
+      { left: "M326 330Q294 400 353 389", right: "M434 330Q466 400 407 389" },
+    ],
+    [
+      { left: "M326 333Q299 298 287 249", right: "M434 333Q466 344 493 372" },
+      { left: "M326 333Q264 304 287 249", right: "M434 333Q499 327 493 372" },
+      { left: "M326 333Q352 285 287 249", right: "M434 333Q449 392 493 372" },
+      { left: "M326 333Q268 345 287 249", right: "M434 333Q484 296 493 372" },
+    ],
+    [
+      { left: "M326 339Q300 377 321 411", right: "M434 338Q459 360 474 397" },
+      { left: "M326 339Q273 390 321 411", right: "M434 338Q496 352 474 397" },
+      { left: "M326 339Q364 373 321 411", right: "M434 338Q420 382 474 397" },
+      { left: "M326 339Q286 344 321 411", right: "M434 338Q489 334 474 397" },
+    ],
+    [
+      { left: "M326 334Q290 330 255 351", right: "M434 334Q469 317 497 287" },
+      { left: "M326 334Q274 293 255 351", right: "M434 334Q503 349 497 287" },
+      { left: "M326 334Q294 389 255 351", right: "M434 334Q454 278 497 287" },
+      { left: "M326 334Q266 370 255 351", right: "M434 334Q482 286 497 287" },
+    ],
+  ] as const;
+  const armPath = paths[purpose][field];
+
+  return (
+    <g data-arm-variant={`${field}-${purpose}`}>
+      <path d={armPath.left} style={outlineStyle} />
+      <path d={armPath.right} style={outlineStyle} />
+      <path d={armPath.left} style={sleeveStyle} />
+      <path d={armPath.right} style={sleeveStyle} />
+    </g>
+  );
+}
+
+type HandKind = "grip" | "point" | "chest" | "open";
+
+function HandShape({
+  kind,
+  x,
+  y,
+  rotation = 0,
+}: {
+  kind: HandKind;
+  x: number;
+  y: number;
+  rotation?: number;
+}) {
+  return (
+    <g
+      transform={`translate(${x} ${y}) rotate(${rotation})`}
+      stroke="var(--ink)"
+      strokeLinejoin="round"
+    >
+      {kind === "grip" ? (
+        <g>
+          <rect x="-11" y="-10" width="22" height="20" rx="6" fill="var(--paper)" strokeWidth="3" />
+          <path d="M-6 -3H7M-6 3H6" stroke="var(--accent)" strokeLinecap="round" strokeWidth="2" />
+        </g>
+      ) : null}
+      {kind === "point" ? (
+        <g fill="var(--paper)" strokeWidth="3">
+          <path d="M-9 8L-8-6L0-10L6-6L7 0L25-7L28-2L7 10Z" />
+          <path d="M-3-6V3M2-7V3" fill="none" strokeWidth="2" />
+        </g>
+      ) : null}
+      {kind === "chest" ? (
+        <g fill="var(--paper)" strokeWidth="3">
+          <path d="M-12 9L-10-7L-5-13L0-5L4-14L8-10L10 6L3 12Z" />
+          <path d="M-5-4L4 5" fill="none" stroke="var(--accent)" strokeWidth="2" />
+        </g>
+      ) : null}
+      {kind === "open" ? (
+        <g fill="var(--paper)" strokeLinecap="round" strokeWidth="3">
+          <path d="M-8 10L-11-5L-7-14L-2-5L1-16L5-6L10-14L10 5L4 12Z" />
+          <path
+            d="M-18-9L-25-14M-16 0L-26 1M-13-17L-16-26"
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="2"
+          />
+        </g>
+      ) : null}
+    </g>
+  );
+}
+
+function PurposeHands({ value }: { value: WorldviewCharacterAxisValue }) {
   if (value === 0) {
     return (
       <g>
-        <path d="M326 330Q338 365 353 389" style={outlineStyle} />
-        <path d="M434 330Q422 365 407 389" style={outlineStyle} />
-        <path d="M326 330Q338 365 353 389" style={sleeveStyle} />
-        <path d="M434 330Q422 365 407 389" style={sleeveStyle} />
+        <HandShape kind="grip" x={351} y={391} rotation={-8} />
+        <HandShape kind="grip" x={409} y={391} rotation={8} />
       </g>
     );
   }
-
   if (value === 1) {
     return (
       <g>
-        <path d="M326 333Q299 298 287 249" style={outlineStyle} />
-        <path d="M434 333Q466 344 493 372" style={outlineStyle} />
-        <path d="M326 333Q299 298 287 249" style={sleeveStyle} />
-        <path d="M434 333Q466 344 493 372" style={sleeveStyle} />
+        <HandShape kind="grip" x={287} y={249} />
+        <HandShape kind="point" x={493} y={372} rotation={-18} />
       </g>
     );
   }
-
   if (value === 2) {
     return (
       <g>
-        <path d="M326 339Q300 377 321 411" style={outlineStyle} />
-        <path d="M434 338Q459 360 474 397" style={outlineStyle} />
-        <path d="M326 339Q300 377 321 411" style={sleeveStyle} />
-        <path d="M434 338Q459 360 474 397" style={sleeveStyle} />
+        <HandShape kind="chest" x={321} y={411} rotation={-18} />
+        <HandShape kind="grip" x={474} y={397} rotation={8} />
       </g>
     );
   }
-
   return (
     <g>
-      <path d="M326 334Q290 330 255 351" style={outlineStyle} />
-      <path d="M434 334Q469 317 497 287" style={outlineStyle} />
-      <path d="M326 334Q290 330 255 351" style={sleeveStyle} />
-      <path d="M434 334Q469 317 497 287" style={sleeveStyle} />
+      <HandShape kind="open" x={255} y={351} rotation={-34} />
+      <HandShape kind="grip" x={497} y={287} rotation={14} />
     </g>
   );
 }
@@ -528,18 +643,20 @@ function PurposeProp({ value }: { value: WorldviewCharacterAxisValue }) {
     return (
       <g>
         <rect
-          x="345"
-          y="357"
-          width="70"
-          height="76"
+          x="340"
+          y="350"
+          width="80"
+          height="88"
           rx="4"
           fill="var(--paper)"
           stroke="var(--ink)"
           strokeWidth="4"
         />
-        <path d="M357 376H403M357 391H389M357 406H398" stroke="var(--accent)" strokeWidth="3" />
-        <circle cx="351" cy="391" r="9" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
-        <circle cx="409" cy="391" r="9" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
+        <path
+          d="M353 371H407M353 389H394M353 407H404M380 351V438"
+          stroke="var(--accent)"
+          strokeWidth="3"
+        />
       </g>
     );
   }
@@ -547,20 +664,12 @@ function PurposeProp({ value }: { value: WorldviewCharacterAxisValue }) {
   if (value === 1) {
     return (
       <g>
-        <circle cx="287" cy="246" r="10" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
         <path
           d="M287 240V172M268 166V191M306 166V191M268 190Q287 207 306 190"
           fill="none"
           stroke="var(--accent)"
           strokeWidth="5"
           strokeLinecap="square"
-        />
-        <circle cx="493" cy="372" r="10" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
-        <path
-          d="M503 367L536 347L527 384Z"
-          fill="var(--accent)"
-          stroke="var(--ink)"
-          strokeWidth="3"
         />
       </g>
     );
@@ -569,8 +678,6 @@ function PurposeProp({ value }: { value: WorldviewCharacterAxisValue }) {
   if (value === 2) {
     return (
       <g>
-        <circle cx="321" cy="411" r="10" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
-        <circle cx="474" cy="397" r="10" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
         <path d="M474 405V421" stroke="var(--ink)" strokeWidth="4" />
         <path
           d="M445 423H503L491 471H457Z"
@@ -586,24 +693,14 @@ function PurposeProp({ value }: { value: WorldviewCharacterAxisValue }) {
 
   return (
     <g>
-      <circle cx="255" cy="351" r="10" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
       <path
-        d="M201 333L256 341L228 356L246 374Z"
+        d="M458 302L515 313L507 360L451 348Z"
         fill="var(--paper)"
         stroke="var(--ink)"
-        strokeWidth="3"
-      />
-      <circle cx="497" cy="287" r="10" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
-      <path d="M500 279L528 246" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" />
-      <path d="M524 242L535 231L530 247Z" fill="var(--ink)" />
-      <path
-        d="M465 305L510 315L504 351L459 341Z"
-        fill="var(--paper)"
-        stroke="var(--ink)"
-        strokeWidth="3"
+        strokeWidth="4"
       />
       <path
-        d="M469 316L482 326L493 319L505 332"
+        d="M464 315L480 329L494 319L510 337M476 347L488 336L501 348"
         fill="none"
         stroke="var(--accent)"
         strokeWidth="2"
@@ -682,8 +779,13 @@ function LegVariant({
   );
 }
 
-function BodyVariant({ values, gradientId }: { values: CharacterValues; gradientId: string }) {
-  const [field, ontology, phenomenology, teleology] = values;
+function BodyVariant({
+  structure,
+  gradientId,
+}: {
+  structure: CharacterStructureSpec;
+  gradientId: string;
+}) {
   const bodyPaths = [
     "M324 307Q380 281 436 307L454 448Q380 472 306 448Z",
     "M311 316Q381 274 449 316L432 456Q382 468 329 456Z",
@@ -702,28 +804,43 @@ function BodyVariant({ values, gradientId }: { values: CharacterValues; gradient
     "M344 291Q380 315 416 291L432 314Q380 350 328 314Z",
     "M319 309L380 289L441 309L421 329Q380 317 339 329Z",
   ] as const;
-  const symbolX = 330 + ontology * 32;
-  const symbolY = 413 - phenomenology * 11;
+  const symbolX = 330 + structure.garment.markX * 32;
+  const symbolY = 413 - structure.garment.markY * 11;
 
   return (
     <g>
-      <path d={bodyPaths[field]} fill={`url(#${gradientId})`} stroke="var(--ink)" strokeWidth="4" />
-      <path d={seamPaths[teleology]} fill="none" stroke="var(--line-strong)" strokeWidth="3" />
-      <path d={collarPaths[ontology]} fill="var(--accent)" stroke="var(--ink)" strokeWidth="3" />
+      <path
+        d={bodyPaths[structure.body]}
+        fill={`url(#${gradientId})`}
+        stroke="var(--ink)"
+        strokeWidth="4"
+      />
+      <path
+        d={seamPaths[structure.garment.seam]}
+        fill="none"
+        stroke="var(--line-strong)"
+        strokeWidth="3"
+      />
+      <path
+        d={collarPaths[structure.garment.collar]}
+        fill="var(--accent)"
+        stroke="var(--ink)"
+        strokeWidth="3"
+      />
       <g opacity={0.75}>
         <rect
           x={symbolX}
           y={symbolY}
-          width={18 + field * 4}
-          height={18 + teleology * 3}
+          width={18 + structure.garment.markWidth * 4}
+          height={18 + structure.garment.markHeight * 3}
           fill="none"
           stroke="var(--accent)"
           strokeWidth="2"
         />
         <path
-          d={`M${symbolX + 5} ${symbolY + 14}Q${symbolX + 14 + phenomenology * 2} ${
+          d={`M${symbolX + 5} ${symbolY + 14}Q${symbolX + 14 + structure.garment.markY * 2} ${
             symbolY - 3
-          } ${symbolX + 25 + field * 2} ${symbolY + 14}`}
+          } ${symbolX + 25 + structure.garment.markWidth * 2} ${symbolY + 14}`}
           fill="none"
           stroke="var(--accent)"
           strokeWidth="2"
@@ -733,27 +850,24 @@ function BodyVariant({ values, gradientId }: { values: CharacterValues; gradient
   );
 }
 
-function ChestSigil({ values }: { values: CharacterValues }) {
-  const [field, ontology, phenomenology, teleology] = values;
-  const lobes = 3 + field;
-  const rotation = -Math.PI / 2 + ontology * (Math.PI / 8);
-  const outerRadius = 17 + phenomenology * 2;
-  const innerRadius = 7 + ontology * 1.8;
-  const satelliteCount = teleology + 1;
+function ChestSigil({ sigil }: { sigil: CharacterStructureSpec["sigil"] }) {
+  const rotation = -Math.PI / 2 + sigil.rotationStep * (Math.PI / 8);
+  const outerRadius = 17 + sigil.outerRadiusStep * 2;
+  const innerRadius = 7 + sigil.innerRadiusStep * 1.8;
 
   return (
     <g>
       <circle cx="380" cy="373" r="34" fill="var(--paper)" stroke="var(--ink)" strokeWidth="3" />
       <polygon
-        points={radialPoints(380, 373, lobes, outerRadius, innerRadius, rotation)}
+        points={radialPoints(380, 373, sigil.lobes, outerRadius, innerRadius, rotation)}
         fill="var(--accent)"
         stroke="var(--ink)"
         strokeLinejoin="round"
         strokeWidth="2"
       />
-      <circle cx="380" cy="373" r={3.5 + phenomenology * 1.4} fill="var(--paper)" />
-      {SIGIL_SLOTS.slice(0, satelliteCount).map((slot) => {
-        const angle = rotation + (slot * Math.PI * 2) / satelliteCount;
+      <circle cx="380" cy="373" r={3.5 + sigil.outerRadiusStep * 1.4} fill="var(--paper)" />
+      {SIGIL_SLOTS.slice(0, sigil.satellites).map((slot) => {
+        const angle = rotation + (slot * Math.PI * 2) / sigil.satellites;
         return (
           <circle
             key={`sigil-satellite-${slot}`}
@@ -775,13 +889,9 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
   const gridId = `${reactId}-worldview-character-grid`;
   const coatGradientId = `${reactId}-worldview-character-coat`;
 
-  const values: CharacterValues = [
-    findAxisValue(profile, "field", 0),
-    findAxisValue(profile, "ontology", 1),
-    findAxisValue(profile, "phenomenology", 2),
-    findAxisValue(profile, "teleology", 3),
-  ];
-  const palette = characterPalette(values);
+  const values = resolveCharacterValues(profile);
+  const renderSpec = createCharacterRenderSpec(values);
+  const { structure, palette } = renderSpec;
   const paletteStyle = {
     "--accent": palette.accent,
     "--accent-soft": palette.soft,
@@ -803,12 +913,15 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
         embedded ? "" : "border border-[var(--line-strong)]"
       }`}
       data-character-palette={palette.name}
+      data-character-pose={structure.pose.key}
+      data-character-fingerprint={renderSpec.fingerprint}
       style={paletteStyle}
     >
       <svg
         viewBox={embedded ? "104 92 552 468" : "0 0 760 560"}
         className="block h-auto w-full"
         role="img"
+        focusable="false"
         aria-labelledby={`${titleId} ${descriptionId}`}
         preserveAspectRatio="xMidYMid meet"
       >
@@ -926,20 +1039,20 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
           </g>
         )}
 
-        <FieldScene value={values[0]} gridId={gridId} />
+        <FieldScene value={structure.scene} gridId={gridId} />
 
         <ellipse cx="380" cy="486" rx="116" ry="17" fill="var(--ink)" opacity="0.1" />
 
         <g className="worldview-character__float">
-          <LegVariant field={values[0]} teleology={values[3]} />
-
-          <PurposeArms value={values[3]} />
-
-          <BodyVariant values={values} gradientId={coatGradientId} />
-          <ChestSigil values={values} />
-          <PurposeProp value={values[3]} />
-          <HeadVariant value={values[1]} />
-          <ExpressionVariant values={values} />
+          <g transform={structure.pose.bodyTransform} data-pose={structure.pose.key}>
+            <LegVariant field={structure.stance} teleology={structure.pose.purpose} />
+            <PurposeArms field={structure.pose.field} purpose={structure.pose.purpose} />
+            <BodyVariant structure={structure} gradientId={coatGradientId} />
+            <ChestSigil sigil={structure.sigil} />
+            <PurposeProp value={structure.prop} />
+            <PurposeHands value={structure.pose.purpose} />
+            <HeadAssembly structure={structure} />
+          </g>
         </g>
 
         {embedded ? null : (
@@ -951,7 +1064,7 @@ export function WorldviewCharacter({ profile, embedded = false }: WorldviewChara
         )}
       </svg>
 
-      <figcaption className="sr-only">
+      <figcaption aria-hidden="true" className="sr-only">
         {profile.archetypeTitle}，{profile.name}，世界观坐标 {displayCode(profile.code)}。
         {variantDescriptions}。
       </figcaption>
